@@ -578,6 +578,16 @@ struct log_PARM_s {
 	char name[64];
 	float value;
 };
+
+/*self-defined parameter*/
+#define LOG_ADRC_MSG 132
+struct log_ADRC_s {
+	float x1;
+	float x2;
+	float z1;
+	float z2;
+	float z3;
+};
 #pragma pack(pop)
 
 // the lower type of initialisation is not supported in C++
@@ -646,7 +656,8 @@ static const struct log_format_s log_formats[] = {
 	/* FMT: don't write format of format message, it's useless */
 	LOG_FORMAT(TIME, "Q", "StartTime"),
 	LOG_FORMAT(VER, "NZ", "Arch,FwGit"),
-	LOG_FORMAT(PARM, "Zf", "Name,Value")
+	LOG_FORMAT(PARM, "Zf", "Name,Value"),
+	LOG_FORMAT(ADRC,"fffff","x1,x2,z1,z2,z3")
 };
 
 static const unsigned log_formats_num = sizeof(log_formats) / sizeof(log_formats[0]);

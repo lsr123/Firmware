@@ -50,6 +50,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_command_ack.h>
+#include <uORB/topics/ADRC.h>
 
 #include <drivers/drv_hrt.h>
 #include <px4_includes.h>
@@ -618,6 +619,7 @@ void Logger::add_default_topics()
 	add_topic("vehicle_vision_position");
 	add_topic("vtol_vehicle_status", 200);
 	add_topic("wind_estimate", 200);
+	add_topic("ADRC");
 }
 
 void Logger::add_high_rate_topics()
@@ -629,6 +631,8 @@ void Logger::add_high_rate_topics()
 	add_topic("vehicle_attitude");
 	add_topic("vehicle_attitude_setpoint");
 	add_topic("vehicle_rates_setpoint");
+	//add_topic("ADRC");
+
 }
 
 void Logger::add_debug_topics()

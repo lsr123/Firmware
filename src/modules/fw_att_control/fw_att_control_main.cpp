@@ -44,7 +44,7 @@
 #include <px4_config.h>
 #include <px4_defines.h>
 #include <px4_tasks.h>
-#include <px4_posix.h>
+#include <px4_posix.h> 
 
 #include <drivers/drv_hrt.h>
 #include <ecl/attitude_fw/ecl_pitch_controller.h>
@@ -166,6 +166,22 @@ private:
 		float p_rmax_pos;
 		float p_rmax_neg;
 		float p_integrator_max;
+
+		float p_ADRC_timestep;
+		float p_ADRC_TD_s;
+		float p_ADRC_TD_r;
+		float p_ADRC_TD_bd;
+		float p_ADRC_NLF_lamda;
+		float p_ADRC_NLF_alpha;
+		float p_ADRC_NLF_b0;
+		float p_ADRC_E_bt1;
+		float p_ADRC_E_bt2;
+		float p_ADRC_E_bt3;
+		float p_ADRC_PD_p;
+		float p_ADRC_PD_d;
+		float p_SIGNAL_P;
+		float p_SIGNAL_D;
+
 		float r_tc;
 		float r_p;
 		float r_i;
@@ -227,6 +243,23 @@ private:
 		param_t p_rmax_pos;
 		param_t p_rmax_neg;
 		param_t p_integrator_max;
+
+		param_t p_ADRC_timestep;
+		param_t p_ADRC_TD_s;
+		param_t p_ADRC_TD_r;
+		param_t p_ADRC_TD_bd;
+		param_t p_ADRC_NLF_lamda;
+		param_t p_ADRC_NLF_alpha;
+		param_t p_ADRC_NLF_b0;
+		param_t p_ADRC_E_bt1;
+		param_t p_ADRC_E_bt2;
+		param_t p_ADRC_E_bt3;
+		
+		param_t p_ADRC_PD_p;
+		param_t p_ADRC_PD_d;
+		param_t p_SIGNAL_P;
+		param_t p_SIGNAL_D;
+
 		param_t r_tc;
 		param_t r_p;
 		param_t r_i;
@@ -275,13 +308,17 @@ private:
 
 		param_t bat_scale_en;
 
-	} _parameter_handles{};		/**< handles for interesting parameters */
-
+	//} _parameter_handles{};		/**< handles for interesting parameters */
+	} _parameter_handles;
 	// Rotation matrix and euler angles to extract from control state
 	math::Matrix<3, 3> _R;
-	float _roll{0.0f};
-	float _pitch{0.0f};
-	float _yaw{0.0f};
+	//float _roll{0.0f};
+	//float _pitch{0.0f};
+	//float _yaw{0.0f};
+
+	float _roll;
+	float _pitch;
+	float _yaw;
 
 	ECL_RollController				_roll_ctrl;
 	ECL_PitchController				_pitch_ctrl;
@@ -385,6 +422,8 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_roll(0.0f),
 	_pitch(0.0f),
 	_yaw(0.0f)
+
+
 {
 	/* safely initialize structs */
 	_actuators = {};
@@ -406,6 +445,24 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_parameter_handles.p_rmax_pos = param_find("FW_P_RMAX_POS");
 	_parameter_handles.p_rmax_neg = param_find("FW_P_RMAX_NEG");
 	_parameter_handles.p_integrator_max = param_find("FW_PR_IMAX");
+
+	_parameter_handles.p_ADRC_timestep = param_find("FW_P_ADRC_T_S");
+	_parameter_handles.p_ADRC_TD_s = param_find("FW_P_ADRC_TD_S");
+	_parameter_handles.p_ADRC_TD_r = param_find("FW_P_ADRC_TD_R");
+	_parameter_handles.p_ADRC_TD_bd = param_find("FW_P_ADRC_BD");
+	_parameter_handles.p_ADRC_NLF_lamda = param_find("FW_P_ADRC_NF_LAM");
+	_parameter_handles.p_ADRC_NLF_alpha = param_find("FW_P_ADRC_NF_ALP");
+	_parameter_handles.p_ADRC_NLF_b0 = param_find("FW_P_ADRC_NF_B0");
+	_parameter_handles.p_ADRC_E_bt1 = param_find("FW_P_ADRC_E_BT1");
+	_parameter_handles.p_ADRC_E_bt2 = param_find("FW_P_ADRC_E_BT2");
+	_parameter_handles.p_ADRC_E_bt3 = param_find("FW_P_ADRC_E_BT3");
+
+
+	_parameter_handles.p_ADRC_PD_p = param_find("FW_P_ADRC_P");
+	_parameter_handles.p_ADRC_PD_d = param_find("FW_P_ADRC_D");
+	_parameter_handles.p_SIGNAL_P = param_find("FW_P_SIGNAL_P");
+	_parameter_handles.p_SIGNAL_D = param_find("FW_P_SIGNAL_D");
+
 
 	_parameter_handles.r_tc = param_find("FW_R_TC");
 	_parameter_handles.r_p = param_find("FW_RR_P");
@@ -500,6 +557,22 @@ FixedwingAttitudeControl::parameters_update()
 	param_get(_parameter_handles.p_rmax_neg, &(_parameters.p_rmax_neg));
 	param_get(_parameter_handles.p_integrator_max, &(_parameters.p_integrator_max));
 
+	param_get(_parameter_handles.p_ADRC_timestep,&(_parameters.p_ADRC_timestep));
+	param_get(_parameter_handles.p_ADRC_TD_s,&(_parameters.p_ADRC_TD_s));
+	param_get(_parameter_handles.p_ADRC_TD_r,&(_parameters.p_ADRC_TD_r));
+	param_get(_parameter_handles.p_ADRC_TD_bd,&(_parameters.p_ADRC_TD_bd));
+	param_get(_parameter_handles.p_ADRC_NLF_lamda ,&(_parameters.p_ADRC_NLF_lamda ));
+	param_get(_parameter_handles.p_ADRC_NLF_alpha ,&(_parameters.p_ADRC_NLF_alpha ));
+	param_get(_parameter_handles.p_ADRC_NLF_b0 ,&(_parameters.p_ADRC_NLF_b0 ));
+	param_get(_parameter_handles.p_ADRC_E_bt1 ,&(_parameters.p_ADRC_E_bt1 ));
+	param_get(_parameter_handles.p_ADRC_E_bt2 ,&(_parameters.p_ADRC_E_bt2 ));
+	param_get(_parameter_handles.p_ADRC_E_bt3 ,&(_parameters.p_ADRC_E_bt3 ));
+
+	param_get(_parameter_handles.p_ADRC_PD_p,&(_parameters.p_ADRC_PD_p));
+	param_get(_parameter_handles.p_ADRC_PD_d,&(_parameters.p_ADRC_PD_d));
+	param_get(_parameter_handles.p_SIGNAL_P,&(_parameters.p_SIGNAL_P));
+	param_get(_parameter_handles.p_SIGNAL_D,&(_parameters.p_SIGNAL_D));
+
 	param_get(_parameter_handles.r_tc, &(_parameters.r_tc));
 	param_get(_parameter_handles.r_p, &(_parameters.r_p));
 	param_get(_parameter_handles.r_i, &(_parameters.r_i));
@@ -570,6 +643,22 @@ FixedwingAttitudeControl::parameters_update()
 	_pitch_ctrl.set_integrator_max(_parameters.p_integrator_max);
 	_pitch_ctrl.set_max_rate_pos(math::radians(_parameters.p_rmax_pos));
 	_pitch_ctrl.set_max_rate_neg(math::radians(_parameters.p_rmax_neg));
+
+	_pitch_ctrl.set_timestep(_parameters.p_ADRC_timestep);
+	_pitch_ctrl.set_s(_parameters.p_ADRC_TD_s);
+	_pitch_ctrl.set_r(_parameters.p_ADRC_TD_r);
+	_pitch_ctrl.set_bd(_parameters.p_ADRC_TD_bd);
+	_pitch_ctrl.set_adrc_lamda(_parameters.p_ADRC_NLF_lamda);
+	_pitch_ctrl.set_adrc_alpha(_parameters.p_ADRC_NLF_alpha);
+	_pitch_ctrl.set_adrc_b0(_parameters.p_ADRC_NLF_b0);
+	_pitch_ctrl.set_adrc_bt1(_parameters.p_ADRC_E_bt1);
+	_pitch_ctrl.set_adrc_bt2(_parameters.p_ADRC_E_bt2);
+	_pitch_ctrl.set_adrc_bt3(_parameters.p_ADRC_E_bt3);
+
+	_pitch_ctrl.set_p(_parameters.p_ADRC_PD_p);
+	_pitch_ctrl.set_d(_parameters.p_ADRC_PD_d);
+	_pitch_ctrl.set_signal_p(_parameters.p_SIGNAL_P);
+	_pitch_ctrl.set_signal_d(_parameters.p_SIGNAL_D);
 
 	/* roll control parameters */
 	_roll_ctrl.set_time_constant(_parameters.r_tc);
@@ -724,6 +813,17 @@ FixedwingAttitudeControl::task_main()
 	_vehicle_land_detected_sub = orb_subscribe(ORB_ID(vehicle_land_detected));
 	_battery_status_sub = orb_subscribe(ORB_ID(battery_status));
 
+	
+	//设置主题订阅的时间间隔  运行周期 0.01s
+	orb_set_interval(_att_sub, 10);
+	orb_set_interval(_att_sp_sub, 10);
+	orb_set_interval(_vcontrol_mode_sub,10);
+	orb_set_interval(_params_sub, 10);
+	orb_set_interval(_manual_sub, 10);
+	orb_set_interval(_global_pos_sub, 10);
+	orb_set_interval(_vehicle_status_sub, 10);
+	orb_set_interval(_vehicle_land_detected_sub, 10);
+	orb_set_interval(_battery_status_sub, 10);
 	parameters_update();
 
 	/* get an initial update for all sensor and status data */
@@ -735,6 +835,9 @@ FixedwingAttitudeControl::task_main()
 	battery_status_poll();
 	_sub_airspeed.update();
 
+
+	hrt_abstime _lasttime = 0;
+
 	/* wakeup source */
 	px4_pollfd_struct_t fds[1];
 
@@ -743,10 +846,29 @@ FixedwingAttitudeControl::task_main()
 	fds[0].events = POLLIN;
 
 	_task_running = true;
-
+	warnx("here3");
 	while (!_task_should_exit) {
+		//warnx("here4");
 		static int loop_counter = 0;
+		static int mycounter = 0;
+		//static float sumtime = 0.0f;
+		//static long nowtime = 0;
+		//static long lasttime = 0;
+		//long dtime = 0;
+		//nowtime = hrt_absolute_time();
+		//dtime = nowtime - lasttime;
+		//lasttime = hrt_absolute_time();
+		
+		float dt = 0.01f; // prevent division with 0
 
+		if (_lasttime > 0) {
+		dt = hrt_elapsed_time(&_lasttime) * 1e-6;
+		}
+
+		_lasttime = hrt_absolute_time();
+		dt = dt;
+		//warnx("time = %.8f\n", (double)dt);
+		//warnx("time = %.8f\n", (double)dtime);
 		/* wait for up to 500ms for data */
 		int pret = px4_poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 100);
 
@@ -782,6 +904,8 @@ FixedwingAttitudeControl::task_main()
 			float deltaT = (hrt_absolute_time() - last_run) / 1000000.0f;
 			last_run = hrt_absolute_time();
 
+			//sleep(2);
+			//printf("%8.6f\n",(double)deltaT );
 			/* guard against too large deltaT's */
 			if (deltaT > 1.0f) {
 				deltaT = 0.01f;
@@ -930,6 +1054,7 @@ FixedwingAttitudeControl::task_main()
 
 			/* decide if in stabilized or full manual control */
 			if (_vcontrol_mode.flag_control_rates_enabled) {
+			
 				/* scale around tuning airspeed */
 				float airspeed;
 
@@ -967,9 +1092,124 @@ FixedwingAttitudeControl::task_main()
 				// in STABILIZED mode we need to generate the attitude setpoint
 				// from manual user inputs
 				if (!_vcontrol_mode.flag_control_climb_rate_enabled && !_vcontrol_mode.flag_control_offboard_enabled) {
+				
 					_att_sp.timestamp = hrt_absolute_time();
 					_att_sp.roll_body = _manual.y * _parameters.man_roll_max + _parameters.rollsp_offset_rad;
 					_att_sp.roll_body = math::constrain(_att_sp.roll_body, -_parameters.man_roll_max, _parameters.man_roll_max);
+					if(_manual.aux1>0)
+					{
+						
+						static uint64_t enter_time = hrt_absolute_time();
+						uint64_t now_time=hrt_absolute_time() ;
+						uint64_t delta_time ;
+						float sumtime = 0.0f;
+						if(mycounter == 0)
+						{
+							enter_time = hrt_absolute_time();
+							mycounter = 1;
+						}
+						else
+						{
+							now_time = hrt_absolute_time();
+						}
+						delta_time = now_time - enter_time;
+						sumtime = delta_time/1000000.0f;
+						
+
+						if(sumtime>1000)
+						{
+							sumtime = 0.0f;
+						}
+						PX4_INFO("delta time = \t%8.4f",(double)sumtime);
+						//下面生成的是正弦波
+						/*
+						if(sumtime<0.5f)
+						{
+							_manual.x= -0.1f;
+						}
+						else if(sumtime<2.5f)
+						{
+							_manual.x = -0.25f;
+						}
+						/
+						
+						if(sumtime<0.5f)
+						{
+							_manual.x =- 0.1f;
+						}
+						else if (sumtime<3.5f)
+						{
+							_manual.x = 0.1f*sinf(0.666f*3.141592653f*(sumtime-0.5f)) - 0.15f;
+						}
+						*/
+						if(sumtime<0.5f)
+						{
+							_manual.z =1.0f;
+						}
+						else if (sumtime<2.0f)
+						{
+							_manual.z = -0.266666667f*sumtime + 1.133333333f;
+						} 
+						else if(sumtime<2.7f)
+						{
+							_manual.z = -0.1429f*sumtime+0.8857f;
+						}
+						else if(sumtime<3.7f)
+						{
+							_manual.z = -0.5f*sumtime+1.85f;
+						}
+						else if(sumtime<5.7f)
+						{
+							_manual.z = 0.0f;
+						}
+						else if(sumtime<7.2f)
+						{
+							_manual.z=0.6666667f*sumtime-3.8f;
+						}
+						/*
+						if(sumtime<0.5f)
+						{
+							_manual.x=-0.25f;
+						}
+						else if(sumtime<3.7f)
+						{
+							_manual.x = -1.0f*(-0.0625f*sumtime+0.28125f);
+						}
+						else if(sumtime<5.7f)
+						{
+							_manual.x = -0.05;
+						}
+						else if(sumtime<7.2f)
+						{
+							_manual.x = -1.0f*(0.1333333f*sumtime - 0.70999999f);
+						}
+						*/
+						if(sumtime<0.5f)
+						{
+							_manual.x=-0.3f;
+						}
+						else if(sumtime<3.7f)
+						{
+							_manual.x = -1.0f*(-0.09375f*sumtime+0.34875f);
+						}
+						else if(sumtime<6.7f)
+						{
+							_manual.x = -0.0f;
+						}
+						else if(sumtime<8.2f)
+						{
+							_manual.x = -1.0f*(0.2f*sumtime - 1.34f);
+						}
+						else if(sumtime<9.2f)
+						{
+							_manual.x = -0.3f;	
+						}
+					}
+					else
+					{
+						mycounter = 0;
+					}
+					
 					_att_sp.pitch_body = -_manual.x * _parameters.man_pitch_max + _parameters.pitchsp_offset_rad;
 					_att_sp.pitch_body = math::constrain(_att_sp.pitch_body, -_parameters.man_pitch_max, _parameters.man_pitch_max);
 					_att_sp.yaw_body = 0.0f;
@@ -1035,6 +1275,7 @@ FixedwingAttitudeControl::task_main()
 
 				/* Run attitude controllers */
 				if (_vcontrol_mode.flag_control_attitude_enabled) {
+				
 					if (PX4_ISFINITE(roll_sp) && PX4_ISFINITE(pitch_sp)) {
 						_roll_ctrl.control_attitude(control_input);
 						_pitch_ctrl.control_attitude(control_input);
@@ -1060,10 +1301,46 @@ FixedwingAttitudeControl::task_main()
 							}
 						}
 
-						float pitch_u = _pitch_ctrl.control_euler_rate(control_input);
-						_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u)) ? pitch_u + _parameters.trim_pitch :
-								_parameters.trim_pitch;
+						float pitch_u = 0.0f;
+						static float pitch_u_ADRC = 0.0f;
+						static float pitch_signal_PID = 0.0f;
 
+						if(_manual.flaps<0)
+						{
+							pitch_u = _pitch_ctrl.control_euler_rate(control_input);
+							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u)) ? pitch_u + _parameters.trim_pitch :
+								_parameters.trim_pitch;
+								
+						}
+						else if(_manual.flaps>0.5f)
+						{
+							//PX4_INFO("signal PID");
+							pitch_signal_PID = _pitch_ctrl.signal_PID_control(control_input);
+							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );//
+
+							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_signal_PID)) ? pitch_signal_PID + _parameters.trim_pitch :
+								_parameters.trim_pitch;
+							PX4_INFO("signal  pid");	
+						}
+						else
+						{
+							pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
+							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );
+
+							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u_ADRC)) ? pitch_u_ADRC + _parameters.trim_pitch :
+								_parameters.trim_pitch;
+						}
+
+
+						//warnx("here5");
+							//pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
+							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );
+							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );
+
+							//_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u_ADRC)) ? pitch_u_ADRC + _parameters.trim_pitch :
+							//	_parameters.trim_pitch;
+						//warnx("here6");
+						
 						if (!PX4_ISFINITE(pitch_u)) {
 							_pitch_ctrl.reset_integrator();
 							perf_count(_nonfinite_output_perf);
@@ -1083,6 +1360,50 @@ FixedwingAttitudeControl::task_main()
 								      (double)_att_sp.roll_body);
 							}
 						}
+
+						
+						
+
+						if (!PX4_ISFINITE(pitch_u_ADRC)) {
+							_pitch_ctrl.reset_integrator();
+							perf_count(_nonfinite_output_perf);
+
+							if (_debug && loop_counter % 10 == 0) {
+								warnx("pitch_u_ADRC %.4f, _yaw_ctrl.get_desired_rate() %.4f,"
+								      " airspeed %.4f, airspeed_scaling %.4f,"
+								      " roll_sp %.4f, pitch_sp %.4f,"
+								      " _roll_ctrl.get_desired_rate() %.4f,"
+								      " _pitch_ctrl.get_desired_rate() %.4f"
+								      " att_sp.roll_body %.4f",
+								      (double)pitch_u_ADRC, (double)_yaw_ctrl.get_desired_rate(),
+								      (double)airspeed, (double)airspeed_scaling,
+								      (double)roll_sp, (double)pitch_sp,
+								      (double)_roll_ctrl.get_desired_rate(),
+								      (double)_pitch_ctrl.get_desired_rate(),
+								      (double)_att_sp.roll_body);
+							}
+						}
+						if (!PX4_ISFINITE(pitch_signal_PID)) {
+							_pitch_ctrl.reset_integrator();
+							perf_count(_nonfinite_output_perf);
+
+							if (_debug && loop_counter % 10 == 0) {
+								warnx("pitch_signal_PID %.4f, _yaw_ctrl.get_desired_rate() %.4f,"
+								      " airspeed %.4f, airspeed_scaling %.4f,"
+								      " roll_sp %.4f, pitch_sp %.4f,"
+								      " _roll_ctrl.get_desired_rate() %.4f,"
+								      " _pitch_ctrl.get_desired_rate() %.4f"
+								      " att_sp.roll_body %.4f",
+								      (double)pitch_signal_PID, (double)_yaw_ctrl.get_desired_rate(),
+								      (double)airspeed, (double)airspeed_scaling,
+								      (double)roll_sp, (double)pitch_sp,
+								      (double)_roll_ctrl.get_desired_rate(),
+								      (double)_pitch_ctrl.get_desired_rate(),
+								      (double)_att_sp.roll_body);
+							}
+						}
+
+						
 
 						float yaw_u = 0.0f;
 
@@ -1239,7 +1560,7 @@ int
 FixedwingAttitudeControl::start()
 {
 	ASSERT(_control_task == -1);
-
+	warnx("here5");
 	/* start the task */
 	_control_task = px4_task_spawn_cmd("fw_att_control",
 					   SCHED_DEFAULT,
@@ -1264,6 +1585,7 @@ int fw_att_control_main(int argc, char *argv[])
 	}
 
 	if (!strcmp(argv[1], "start")) {
+
 
 		if (att_control::g_control != nullptr) {
 			warnx("already running");

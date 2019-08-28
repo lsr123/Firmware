@@ -13,7 +13,7 @@ set(config_module_list
 	#drivers/bmp280
 	drivers/boards
 	#drivers/bst
-	drivers/camera_trigger
+	#drivers/camera_trigger
 	drivers/device
 	#drivers/ets_airspeed
 	drivers/frsky_telemetry
@@ -41,7 +41,7 @@ set(config_module_list
 	#drivers/protocol_splitter
 	drivers/pwm_input
 	drivers/pwm_out_sim
-	drivers/px4flow
+	#drivers/px4flow
 	drivers/px4fmu
 	drivers/px4io
 	drivers/rgbled
@@ -99,7 +99,7 @@ set(config_module_list
 	#
 	# General system control
 	#
-	modules/camera_feedback
+	#modules/camera_feedback
 	modules/commander
 	modules/events
 	#modules/gpio_led
@@ -124,8 +124,8 @@ set(config_module_list
 	modules/fw_pos_control_l1
 	modules/gnd_att_control
 	modules/gnd_pos_control
-	modules/mc_att_control
-	modules/mc_pos_control
+	#modules/mc_att_control
+	#modules/mc_pos_control
 	modules/vtol_att_control
 
 	#
@@ -141,6 +141,11 @@ set(config_module_list
 	modules/systemlib
 	modules/systemlib/param
 	modules/uORB
+
+	#
+	# Serical send and receive
+	#
+	#modules/serial_send_receive	
 
 	#
 	# Libraries
@@ -189,7 +194,8 @@ set(config_module_list
 
 	# Tutorial code from
 	# https://px4.io/dev/px4_simple_app
-	#examples/px4_simple_app
+	examples/px4_simple_app
+	#examples/ADRC_test
 
 	# Tutorial code from
 	# https://px4.io/dev/daemon

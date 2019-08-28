@@ -101,6 +101,7 @@
 #include <uORB/topics/commander_state.h>
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/task_stack_info.h>
+#include <uORB/topics/ADRC.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -1193,6 +1194,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct cpuload_s cpuload;
 		struct vehicle_gps_position_s dual_gps_pos;
 		struct task_stack_info_s task_stack_info;
+		struct ADRC_s ADRC_data_info;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1250,6 +1252,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_LOAD_s log_LOAD;
 			struct log_DPRS_s log_DPRS;
 			struct log_STCK_s log_STCK;
+			struct log_ADRC_s log_ADRC;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1299,6 +1302,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int cpuload_sub;
 		int diff_pres_sub;
 		int task_stack_info_sub;
+		int ADRC_sub;
 	} subs;
 
 	subs.cmd_sub = -1;
@@ -1341,6 +1345,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.cpuload_sub = -1;
 	subs.diff_pres_sub = -1;
 	subs.task_stack_info_sub = -1;
+	subs.ADRC_sub=-1;
 
 	/* add new topics HERE */
 
@@ -1543,6 +1548,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 					log_msg.body.log_IMU.gyro_y = buf.sensor.gyro_rad[1];
 					log_msg.body.log_IMU.gyro_z = buf.sensor.gyro_rad[2];
 					log_msg.body.log_IMU.acc_x = buf.sensor.accelerometer_m_s2[0];
+					//log_msg.body.log_IMU.acc_x = 1.3;
 					log_msg.body.log_IMU.acc_y = buf.sensor.accelerometer_m_s2[1];
 					log_msg.body.log_IMU.acc_z = buf.sensor.accelerometer_m_s2[2];
 					log_msg.body.log_IMU.mag_x = buf.sensor.magnetometer_ga[0];
@@ -1784,12 +1790,14 @@ int sdlog2_thread_main(int argc, char *argv[])
 			/* --- BATTERY --- */
 			if (copy_if_updated(ORB_ID(battery_status), &subs.battery_sub, &buf.battery)) {
 				log_msg.msg_type = LOG_BATT_MSG;
-				log_msg.body.log_BATT.voltage = buf.battery.voltage_v;
+				//log_msg.body.log_BATT.voltage = buf.battery.voltage_v;
+				log_msg.body.log_BATT.voltage = 15.0;
 				log_msg.body.log_BATT.voltage_filtered = buf.battery.voltage_filtered_v;
 				log_msg.body.log_BATT.current = buf.battery.current_a;
 				log_msg.body.log_BATT.current_filtered = buf.battery.current_filtered_a;
 				log_msg.body.log_BATT.discharged = buf.battery.discharged_mah;
-				log_msg.body.log_BATT.remaining = buf.battery.remaining;
+				//log_msg.body.log_BATT.remaining = buf.battery.remaining;
+				log_msg.body.log_BATT.remaining = 5.0;
 				log_msg.body.log_BATT.scale = buf.battery.scale;
 				log_msg.body.log_BATT.warning = buf.battery.warning;
 				LOGBUFFER_WRITE_AND_COUNT(BATT);
@@ -2093,6 +2101,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		if (copy_if_updated(ORB_ID(vehicle_attitude), &subs.att_sub, &buf.att)) {
 			log_msg.msg_type = LOG_ATT_MSG;
 			float q0 = buf.att.q[0];
+			//float q0 = 0.0432;
 			float q1 = buf.att.q[1];
 			float q2 = buf.att.q[2];
 			float q3 = buf.att.q[3];
@@ -2101,6 +2110,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_ATT.q_y = q2;
 			log_msg.body.log_ATT.q_z = q3;
 			log_msg.body.log_ATT.roll = atan2f(2*(q0*q1 + q2*q3), 1 - 2*(q1*q1 + q2*q2));
+			//log_msg.body.log_ATT.roll = 0.1;
 			log_msg.body.log_ATT.pitch = asinf(2*(q0*q2 - q3*q1));
 			log_msg.body.log_ATT.yaw = atan2f(2*(q0*q3 + q1*q2), 1 - 2*(q2*q2 + q3*q3));
 			log_msg.body.log_ATT.roll_rate = buf.att.rollspeed;
@@ -2138,6 +2148,19 @@ int sdlog2_thread_main(int argc, char *argv[])
 			strncpy(log_msg.body.log_STCK.task_name, (char*)buf.task_stack_info.task_name,
 					sizeof(log_msg.body.log_STCK.task_name));
 			LOGBUFFER_WRITE_AND_COUNT(STCK);
+		}
+
+		if (copy_if_updated(ORB_ID(ADRC), &subs.ADRC_sub, &buf.ADRC_data_info)) {
+
+			log_msg.msg_type = LOG_ADRC_MSG;
+			//log_msg.body.log_ADRC.x1 = buf.ADRC_data_info.x1;
+			log_msg.body.log_ADRC.x1 = 0.3333;
+			log_msg.body.log_ADRC.x2 = buf.ADRC_data_info.x2;
+			log_msg.body.log_ADRC.z1 = buf.ADRC_data_info.z1;
+			log_msg.body.log_ADRC.z2 = buf.ADRC_data_info.z2;
+			log_msg.body.log_ADRC.z3 = buf.ADRC_data_info.z3;
+			
+			LOGBUFFER_WRITE_AND_COUNT(ADRC);
 		}
 
 		pthread_mutex_lock(&logbuffer_mutex);
