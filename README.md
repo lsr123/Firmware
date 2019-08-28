@@ -110,4 +110,4 @@ Additional information about supported hardware can be found in [PX4 user Guide 
 A high level project roadmap is available [here](https://www.dronecode.org/roadmap/).
 
 
-这个分支，包含三种姿态控制方法，通过拨杆控制，分别是 原始方法、 单级PD、ADRC。包括日志记录功能。是第一篇文章的原始代码
+这个分支，包含盘旋降落，在盘旋点降高降速，内环包括三种姿态控制方法，拨杆切换。
