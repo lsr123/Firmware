@@ -44,6 +44,7 @@ px4_add_module(
 		mission_block.cpp
 		mission.cpp
 		loiter.cpp
+		loiter_land.cpp
 		rtl.cpp
 		takeoff.cpp
 		land.cpp

@@ -433,7 +433,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 
 		break;
 
-	case commander_state_s::MAIN_STATE_AUTO_LOITER:
+	case commander_state_s::MAIN_STATE_AUTO_LOITER:               
 
 		/* need global position estimate */
 		if (status_flags->condition_global_position_valid) {
@@ -441,6 +441,16 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		}
 
 		break;
+
+	case commander_state_s::MAIN_STATE_AUTO_LOITER_LAND:               
+
+		/* need global position estimate */
+		if (status_flags->condition_global_position_valid) {
+			ret = TRANSITION_CHANGED;
+		}
+
+		break;
+
 
 	case commander_state_s::MAIN_STATE_AUTO_FOLLOW_TARGET:
 
@@ -499,7 +509,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 
 	if (ret == TRANSITION_CHANGED) {
 		if (internal_state->main_state != new_main_state) {
-			main_state_prev = internal_state->main_state;
+			main_state_prev = internal_state->main_state;          /////    store   old  state   and  then   give  new state to internal_state->main_state
 			internal_state->main_state = new_main_state;
 			internal_state->timestamp = hrt_absolute_time();
 
@@ -614,6 +624,8 @@ bool set_nav_state(struct vehicle_status_s *status,
 	// Safe to do reset flags here, as if loss state persists flags will be restored in the code below
 	reset_link_loss_globals(armed, old_failsafe, rc_loss_act);
 	reset_link_loss_globals(armed, old_failsafe, data_link_loss_act);
+
+	//mavlink_and_console_log_info(&mavlink_log_pub, "boom  hereeeeeeeeeeeeeeeeeeee");
 
 	/* evaluate main state to decide in normal (non-failsafe) mode */
 	switch (internal_state->main_state) {
@@ -771,7 +783,51 @@ bool set_nav_state(struct vehicle_status_s *status,
 
 		} else {
 			/* everything is perfect */
+			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;         //////    here  !!  according to  all   situations  ,    set  the  nav state   to   loiter
+		}
+
+		break;
+
+
+	case commander_state_s::MAIN_STATE_AUTO_LOITER_LAND:
+
+		/* go into failsafe on a engine failure */
+		if (status->engine_failure) {
+			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LANDENGFAIL;
+
+		} else if (status_flags->gps_failure) {
+			if (status->is_rotary_wing) {
+				status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+
+			} else {
+				status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LANDGPSFAIL;
+			}
+
+			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_gps);
+
+		} else if (is_armed && check_invalid_pos_nav_state(status, old_failsafe, mavlink_log_pub, status_flags, false, true)) {
+			// nothing to do - everything done in check_invalid_pos_nav_state
+		} else if (status->data_link_lost && data_link_loss_act_configured && !landed) {
+			/* also go into failsafe if just datalink is lost, and we're actually in air */
+			set_data_link_loss_nav_state(status, armed, status_flags, internal_state, data_link_loss_act);
+
+			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_datalink);
+
+		} else if (rc_lost && !data_link_loss_act_configured) {
+			/* go into failsafe if RC is lost and datalink loss is not set up and rc loss is not DISABLED */
+			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
+
+			set_rc_loss_nav_state(status, armed, status_flags, internal_state, rc_loss_act);
+
+		} else if (status->rc_signal_lost) {
+			/* don't bother if RC is lost if datalink is connected */
+
+			/* this mode is ok, we don't need RC for LOITERing */
 			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
+
+		} else {
+			/* everything is perfect */
+			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER_LAND;         //////    here  !!  according to  all   situations  ,    set  the  nav state   to   loiter
 		}
 
 		break;

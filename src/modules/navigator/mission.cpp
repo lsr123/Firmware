@@ -533,6 +533,7 @@ Mission::set_mission_items()
 			} else {
 				/* https://en.wikipedia.org/wiki/Loiter_(aeronautics) */
 				mavlink_log_info(_navigator->get_mavlink_log_pub(), "Mission finished, loitering.");
+				//mavlink_log_info(_navigator->get_mavlink_log_pub(), "boom  here");
 
 				/* use last setpoint for loiter */
 				_navigator->set_can_loiter_at_sp(true);

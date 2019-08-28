@@ -46,6 +46,10 @@ FixedwingPositionControl::FixedwingPositionControl() :
 	_parameter_handles.l1_period = param_find("FW_L1_PERIOD");
 	_parameter_handles.l1_damping = param_find("FW_L1_DAMPING");
 
+	_parameter_handles.loi_end_alt = param_find("FW_LOI_END_ALT");
+	_parameter_handles.loi_end_aps = param_find("FW_LOI_END_ASP");
+	_parameter_handles.min_loirad = param_find("FW_MIN_LOIRAD");
+
 	_parameter_handles.airspeed_min = param_find("FW_AIRSPD_MIN");
 	_parameter_handles.airspeed_trim = param_find("FW_AIRSPD_TRIM");
 	_parameter_handles.airspeed_max = param_find("FW_AIRSPD_MAX");
@@ -129,6 +133,10 @@ FixedwingPositionControl::parameters_update()
 	/* L1 control parameters */
 	param_get(_parameter_handles.l1_damping, &(_parameters.l1_damping));
 	param_get(_parameter_handles.l1_period, &(_parameters.l1_period));
+
+	param_get(_parameter_handles.loi_end_alt, &(_parameters.loi_end_alt));
+	param_get(_parameter_handles.loi_end_aps, &(_parameters.loi_end_aps));
+	param_get(_parameter_handles.min_loirad, &(_parameters.min_loirad));
 
 	param_get(_parameter_handles.airspeed_min, &(_parameters.airspeed_min));
 	param_get(_parameter_handles.airspeed_trim, &(_parameters.airspeed_trim));
@@ -750,7 +758,13 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 			prev_wp(1) = (float)pos_sp_curr.lon;
 		}
 
+
 		float mission_airspeed = _parameters.airspeed_trim;
+
+		
+		mission_airspeed = _parameters.airspeed_trim;
+		
+		
 
 		if (PX4_ISFINITE(pos_sp_curr.cruising_speed) &&
 		    pos_sp_curr.cruising_speed > 0.1f) {
@@ -776,7 +790,6 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 			_l1_control.navigate_waypoints(prev_wp, curr_wp, curr_pos, nav_speed_2d);
 			_att_sp.roll_body = _l1_control.nav_roll();
 			_att_sp.yaw_body = _l1_control.nav_bearing();
-
 			tecs_update_pitch_throttle(pos_sp_curr.alt,
 						   calculate_target_airspeed(mission_airspeed),
 						   radians(_parameters.pitch_limit_min) - _parameters.pitchsp_offset_rad,
@@ -787,6 +800,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 						   false,
 						   radians(_parameters.pitch_limit_min));
 
+
 		} else if (pos_sp_curr.type == position_setpoint_s::SETPOINT_TYPE_LOITER) {
 
 			/* waypoint is a loiter waypoint */
@@ -796,7 +810,14 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 			_att_sp.yaw_body = _l1_control.nav_bearing();
 
 			float alt_sp = pos_sp_curr.alt;
-
+			static int count = 0;
+			static float alt_temp = -1.0f;
+			static float airspeed_temp = -1.0f;
+			static float my_alt_sp = 550.0f;
+			static float my_airspeed_sp = 10.0f;
+			my_alt_sp = my_alt_sp;
+			my_airspeed_sp = my_airspeed_sp;
+			airspeed_temp = airspeed_temp;
 			if (in_takeoff_situation()) {
 				alt_sp = max(alt_sp, _takeoff_ground_alt + _parameters.climbout_diff);
 				_att_sp.roll_body = constrain(_att_sp.roll_body, radians(-5.0f), radians(5.0f));
@@ -813,6 +834,38 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 				}
 			}
 
+															//////这个逻辑只有在盘旋模式下才有效
+			//temp = 3 * sinf(2*3.1415926*0.01*count/20);
+			//temp = temp;
+			_manual.aux1 = 0.1;
+			if(_parameters.l1_period > 20){            ///////这个判断，后续替换成开关量,
+				count = count + 1;
+				if(count == 1)
+				{
+					alt_temp = _global_pos.alt;
+					airspeed_temp = sqrt(pow(_global_pos.vel_n,2) + pow(_global_pos.vel_d,2) + pow(_global_pos.vel_e,2));
+				}
+				else
+				{
+					calculate_alt_airspeed_sp(&my_alt_sp,&my_airspeed_sp,alt_temp,airspeed_temp);
+				}
+				mission_airspeed = _parameters.airspeed_trim;     //////通过开关选择是用地面站设定的速度还是用降落模块传递过来的速度
+			
+				tecs_update_pitch_throttle(my_alt_sp,
+						   calculate_target_airspeed(my_airspeed_sp),
+						   radians(_parameters.pitch_limit_min) - _parameters.pitchsp_offset_rad,
+						   radians(_parameters.pitch_limit_max) - _parameters.pitchsp_offset_rad,
+						   _parameters.throttle_min,
+						   _parameters.throttle_max,
+						   _parameters.throttle_cruise,
+						   false,
+						   radians(_parameters.pitch_limit_min));
+			//PX4_INFO("mission_airspeed11 = %f",(double)calculate_target_airspeed(mission_airspeed));
+
+			} else{
+
+			//mission_airspeed = _pos_sp_triplet.my_desire_airsp;
+			//mission_airspeed = 12.0f;
 			tecs_update_pitch_throttle(alt_sp,
 						   calculate_target_airspeed(mission_airspeed),
 						   radians(_parameters.pitch_limit_min) - _parameters.pitchsp_offset_rad,
@@ -822,6 +875,20 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 						   _parameters.throttle_cruise,
 						   false,
 						   radians(_parameters.pitch_limit_min));
+			//PX4_INFO("mission_airspeed = %f",(double)_pos_sp_triplet.my_desire_airsp);
+			}
+			//PX4_INFO("temp = %f ",(double)temp);
+			
+
+			PX4_INFO("vehicle_global_position.alt = %f ",(double)_global_pos.alt);   
+			PX4_INFO("vehicle_global_position.vel_n = %f ",(double)_global_pos.vel_n);
+			PX4_INFO("vehicle_global_position.vel_e = %f ",(double)_global_pos.vel_e);
+			PX4_INFO("vehicle_global_position.vel_d = %f ",(double)_global_pos.vel_d);
+			PX4_INFO("vehicle_global_position.alt_sp = %f ",(double)alt_sp); 
+			PX4_INFO("vehicle_global_position.airspeed_sp = %f ",(double)mission_airspeed);
+
+
+
 
 		} else if (pos_sp_curr.type == position_setpoint_s::SETPOINT_TYPE_LAND) {
 
@@ -1368,6 +1435,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 
 		_att_sp.roll_body = _manual.y * _parameters.man_roll_max_rad;
 		_att_sp.yaw_body = 0;
+		PX4_INFO("hold here");
 
 	} else {
 		_control_mode_current = FW_POSCTRL_MODE_OTHER;
@@ -1495,7 +1563,7 @@ FixedwingPositionControl::task_main()
 	 */
 	_global_pos_sub = orb_subscribe(ORB_ID(vehicle_global_position));
 	_local_pos_sub = orb_subscribe(ORB_ID(vehicle_local_position));
-	_pos_sp_triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
+	_pos_sp_triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));     //
 	_control_mode_sub = orb_subscribe(ORB_ID(vehicle_control_mode));
 	_vehicle_attitude_sub = orb_subscribe(ORB_ID(vehicle_attitude));
 	_vehicle_command_sub = orb_subscribe(ORB_ID(vehicle_command));
@@ -1982,4 +2050,57 @@ int fw_pos_control_l1_main(int argc, char *argv[])
 
 	PX4_WARN("unrecognized command");
 	return 1;
+}
+
+
+
+void FixedwingPositionControl::calculate_alt_airspeed_sp(float *my_alt_sp, float *my_airspeed_sp,float alt_start,float airspeed_start)
+{
+
+	static float current_alt_target = alt_start;
+	static float current_airspeed_target = airspeed_start;
+
+	delta_h = (alt_start - _parameters.loi_end_alt) / 5.0f;
+	delta_airspeed = (airspeed_start - _parameters.loi_end_aps) / 5.0f;
+
+	if(reach_alt_airspeed(_parameters.loi_end_alt,_parameters.loi_end_aps))
+	{
+
+	}
+	else
+	{
+		if(reach_alt_airspeed(current_alt_target,current_airspeed_target))
+		{
+			current_alt_target = current_alt_target - delta_h;
+			current_airspeed_target = current_airspeed_target - delta_airspeed;
+		}
+		else
+		{
+
+		}
+
+	}
+	*my_alt_sp = current_alt_target;
+	*my_airspeed_sp = current_airspeed_target ;
+	//delta_airspeed = 0.1f;
+	//delta_h = delta_h;
+	PX4_INFO("my_alt_sp = %f",(double)*my_alt_sp);
+	PX4_INFO("my_airspeed_sp = %f",(double)*my_airspeed_sp);
+
+}
+
+bool FixedwingPositionControl::reach_alt_airspeed(float alt_target,float airspeed_target)
+{
+	float current_alt = _global_pos.alt;
+	float current_airspeed = sqrt(pow(_global_pos.vel_n,2) + pow(_global_pos.vel_d,2) + pow(_global_pos.vel_e,2));
+
+	if(fabs(current_alt - alt_target)<2 && fabs(current_airspeed - airspeed_target)<1)
+	{
+		return true;
+	}
+	else
+	{
+
+		return false;
+	}
 }

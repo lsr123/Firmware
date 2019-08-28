@@ -217,6 +217,11 @@ private:
 	bool _was_in_air{false};				///< indicated wether the plane was in the air in the previous interation*/
 	hrt_abstime _time_went_in_air{0};			///< time at which the plane went in the air */
 
+	/* loiter  landing*/
+	float delta_h{0.0f};
+	float delta_airspeed{0.0f};
+
+
 	/* Takeoff launch detection and runway */
 	LaunchDetector _launchDetector;
 	LaunchDetectionResult _launch_detection_state{LAUNCHDETECTION_RES_NONE};
@@ -263,6 +268,10 @@ private:
 	struct {
 		float l1_period;
 		float l1_damping;
+
+		float loi_end_alt;
+		float loi_end_aps;
+		float min_loirad;
 
 		float time_const;
 		float time_const_throt;
@@ -322,6 +331,10 @@ private:
 	struct {
 		param_t l1_period;
 		param_t l1_damping;
+
+		param_t loi_end_alt;
+		param_t loi_end_aps;
+		param_t min_loirad;
 
 		param_t time_const;
 		param_t time_const_throt;
@@ -471,7 +484,8 @@ private:
 					float throttle_min, float throttle_max, float throttle_cruise,
 					bool climbout_mode, float climbout_pitch_min_rad,
 					uint8_t mode = tecs_status_s::TECS_MODE_NORMAL);
-
+	void calculate_alt_airspeed_sp(float *alt, float *airspeed, float alt_start,float airspeed_temp);
+	bool reach_alt_airspeed(float alt, float airspeed);
 };
 
 namespace l1_control

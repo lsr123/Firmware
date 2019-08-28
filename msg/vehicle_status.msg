@@ -33,7 +33,8 @@ uint8 NAVIGATION_STATE_RATTITUDE = 16		# Rattitude (aka "flip") mode
 uint8 NAVIGATION_STATE_AUTO_TAKEOFF = 17	# Takeoff
 uint8 NAVIGATION_STATE_AUTO_LAND = 18		# Land
 uint8 NAVIGATION_STATE_AUTO_FOLLOW_TARGET = 19	# Auto Follow
-uint8 NAVIGATION_STATE_MAX = 20
+uint8 NAVIGATION_STATE_AUTO_LOITER_LAND = 20
+uint8 NAVIGATION_STATE_MAX = 21
 
 uint8 RC_IN_MODE_DEFAULT = 0
 uint8 RC_IN_MODE_OFF = 1
@@ -56,6 +57,8 @@ bool is_vtol				# True if the system is VTOL capable
 bool vtol_fw_permanent_stab		# True if VTOL should stabilize attitude for fw in manual mode
 bool in_transition_mode			# True if VTOL is doing a transition
 bool in_transition_to_fw		# True if VTOL is doing a transition from MC to FW
+
+bool is_auto_loiter_land                                     #  loiter  landing    ///////
 
 bool rc_signal_lost				# true if RC reception lost
 uint8 rc_input_mode				# set to 1 to disable the RC input, 2 to enable manual control to RC in mapping.

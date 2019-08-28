@@ -53,90 +53,53 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 
-#include "loiter.h"
+#include "loiter_land.h"
 #include "navigator.h"
 
-Loiter::Loiter(Navigator *navigator, const char *name) :
+Loiter_land::Loiter_land(Navigator *navigator, const char *name) :
 	MissionBlock(navigator, name),
 	_param_yawmode(this, "MIS_YAWMODE", false),
-	_loiter_pos_set(false),
-	_loiter_land_start(false),
-	_loiter_num(3.0f),
-	_on_active_num(1)
+	_loiter_pos_set(false)
 {
 }
 
-Loiter::~Loiter()
+Loiter_land::~Loiter_land()
 {
 }
 
 void
-Loiter::on_inactive()      //run(false)不进入loiter时运行这个函数
+Loiter_land::on_inactive()
 {
-	_loiter_pos_set = false;            ///// on_inactive function frequency is about 20Hz
-	
+	_loiter_pos_set = false;
 }
 
 void
-Loiter::on_activation()     // turn  to  loiter  first  其他模式进入loiter 时，运行这个函数
+Loiter_land::on_activation()
 {
-	//while(1)
-	//{
-		if (_navigator->get_reposition_triplet()->current.valid) {
-			reposition();
-			PX4_INFO("mission to loiter first");
-
-		} else {
-			set_loiter_position();
-		}
-
-		//sleep(1);
-
-	//}
-
-}
-
-
-// 当在地面站中使用鼠标Goto here 时，on_active函数的运行频率为20Hz，
-//因为源码中，位置改变函数reposition（）在if判断中，
-//所以，实际盘旋时，只发布一个位置设定消息。
-//因此，重新设定判断条件，就可以不断改变盘旋位置设定点，不断发布新的位置了。
-void
-Loiter::on_active()     //continue loitor 连续设定盘旋点时，运行这个函数
-{
-	
 	if (_navigator->get_reposition_triplet()->current.valid) {
-		if(_loiter_land_start == false)
-		{
-			reposition();
-		}
-		else
-		{
-			//reposition_land();
-		}
-		
-		PX4_INFO("loiter to loiter");
-		
+		reposition();
+
+	} else {
+		set_loiter_position();
 	}
-	if(_loiter_land_start == true)
-	{
-		reposition_land();
+}
+
+void
+Loiter_land::on_active()
+{
+	if (_navigator->get_reposition_triplet()->current.valid) {
+		reposition();
 	}
 
 	// reset the loiter position if we get disarmed
 	if (_navigator->get_vstatus()->arming_state != vehicle_status_s::ARMING_STATE_ARMED) {
 		_loiter_pos_set = false;
 	}
-	
-	
-	//PX4_INFO("run in loiter on_active %d",_on_active_num);
-	_on_active_num = _on_active_num + 1;
 }
 
 void
-Loiter::set_loiter_position()
+Loiter_land::set_loiter_position()
 {
-	PX4_INFO("set_loiter_position");
 	if (_navigator->get_vstatus()->arming_state != vehicle_status_s::ARMING_STATE_ARMED &&
 	    _navigator->get_land_detected()->landed) {
 
@@ -164,8 +127,6 @@ Loiter::set_loiter_position()
 	pos_sp_triplet->current.velocity_valid = false;
 	pos_sp_triplet->previous.valid = false;
 	mission_apply_limitation(_mission_item);
-
-	//pos_sp_triplet->current.alt = pos_sp_triplet->current.alt - 10.0f;
 	mission_item_to_position_setpoint(_mission_item, &pos_sp_triplet->current);
 	pos_sp_triplet->next.valid = false;
 
@@ -175,77 +136,18 @@ Loiter::set_loiter_position()
 }
 
 void
-Loiter::reposition()            /////repositon()的逻辑也需要仔细考虑,才能一直发布盘旋消息
+Loiter_land::reposition()
 {
 	// we can't reposition if we are not armed yet
 	if (_navigator->get_vstatus()->arming_state != vehicle_status_s::ARMING_STATE_ARMED) {
 		return;
 	}
-	PX4_INFO("reposition");
-	
+
 	struct position_setpoint_triplet_s *rep = _navigator->get_reposition_triplet();
-	//PX4_INFO("after if");
+
 	if (rep->current.valid) {
-		//PX4_INFO("run in loiter on_active %d",_on_active_num);
 		// set loiter position based on reposition command
-		//PX4_INFO("in if");
-		// convert mission item to current setpoint
-		struct position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-		pos_sp_triplet->current.velocity_valid = true;
-		pos_sp_triplet->previous.yaw = _navigator->get_global_position()->yaw;
-		pos_sp_triplet->previous.lat = _navigator->get_global_position()->lat;
-		pos_sp_triplet->previous.lon = _navigator->get_global_position()->lon;
-		pos_sp_triplet->previous.alt = _navigator->get_global_position()->alt;
-		memcpy(&pos_sp_triplet->current, &rep->current, sizeof(rep->current));
-		//pos_sp_triplet->current.alt = pos_sp_triplet->current.alt - 10.0f;
-		//pos_sp_triplet->current.cruising_speed = 20.0f;
-		//pos_sp_triplet->my_desire_airsp = 18.0f;
-		
-		//set_cruising_speed(20.0f);
-		//_navigator->set_cruising_speed(20.0f);
-		
-		pos_sp_triplet->next.valid = false;
 
-		// set yaw (depends on the value of parameter MIS_YAWMODE):
-		// MISSION_YAWMODE_NONE: do not change yaw setpoint
-		// MISSION_YAWMODE_FRONT_TO_WAYPOINT: point to next waypoint
-		if (_param_yawmode.get() != MISSION_YAWMODE_NONE) {
-			float travel_dist = get_distance_to_next_waypoint(_navigator->get_global_position()->lat,
-					    _navigator->get_global_position()->lon,
-					    pos_sp_triplet->current.lat, pos_sp_triplet->current.lon);
-
-			if (travel_dist > 1.0f) {
-				// calculate direction the vehicle should point to.
-				pos_sp_triplet->current.yaw = get_bearing_to_next_waypoint(
-								      _navigator->get_global_position()->lat,
-								      _navigator->get_global_position()->lon,
-								      pos_sp_triplet->current.lat,
-								      pos_sp_triplet->current.lon);
-			}
-		}
-
-		_navigator->set_can_loiter_at_sp(pos_sp_triplet->current.type == position_setpoint_s::SETPOINT_TYPE_LOITER);
-
-		_navigator->set_position_setpoint_triplet_updated();           ///// after call this function, the triplet position will be published in navigator_main.cpp
-		//PX4_INFO("set_position_setpoint_triplet_updated");
-		// mark this as done
-		memset(rep, 0, sizeof(*rep));
-	}
-}
-
-void Loiter::reposition_land()
-{
-	PX4_INFO("run in loiter on_active %d",_on_active_num);
-	// we can't reposition if we are not armed yet
-	if (_navigator->get_vstatus()->arming_state != vehicle_status_s::ARMING_STATE_ARMED) {
-		return;
-	}
-	PX4_INFO("run in lo");
-	struct position_setpoint_triplet_s *rep = _navigator->get_reposition_triplet();
-	
-	//if (rep->current.valid) {
-		PX4_INFO("run in lodddddd");
-		// set loiter position based on reposition command
 		// convert mission item to current setpoint
 		struct position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 		pos_sp_triplet->current.velocity_valid = false;
@@ -254,17 +156,6 @@ void Loiter::reposition_land()
 		pos_sp_triplet->previous.lon = _navigator->get_global_position()->lon;
 		pos_sp_triplet->previous.alt = _navigator->get_global_position()->alt;
 		memcpy(&pos_sp_triplet->current, &rep->current, sizeof(rep->current));
-		//pos_sp_triplet->current.alt = pos_sp_triplet->current.alt;
-		//pos_sp_triplet->current.cruising_speed = pos_sp_triplet->current.cruising_speed - 5.0f;
-		//set_cruising_speed(20.0f);
-		//pos_sp_triplet->my_desire_airsp = 20.0f;
-		//PX4_INFO("global position %f",(double)_navigator->get_global_position()->alt);
-		//PX4_INFO("local position %f",(double)_navigator->get_local_position()->z);
-		
-		pos_sp_triplet->my_desire_airsp = 18.0f;
-		//_pos_sp_triplet.current.valid = true;
-		
-
 		pos_sp_triplet->next.valid = false;
 
 		// set yaw (depends on the value of parameter MIS_YAWMODE):
@@ -287,10 +178,9 @@ void Loiter::reposition_land()
 
 		_navigator->set_can_loiter_at_sp(pos_sp_triplet->current.type == position_setpoint_s::SETPOINT_TYPE_LOITER);
 
-		_navigator->set_position_setpoint_triplet_updated();           ///// after call this function, the triplet position will be published in navigator_main.cpp
-	
+		_navigator->set_position_setpoint_triplet_updated();
+
 		// mark this as done
 		memset(rep, 0, sizeof(*rep));
-	//}
-	
+	}
 }

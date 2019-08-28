@@ -256,6 +256,7 @@ static uint8_t arm_requirements = ARM_REQ_NONE;
 static bool _last_condition_global_position_valid = false;
 
 static struct vehicle_land_detected_s land_detector = {};
+int32_t datalink_loss_timeout = 10;
 
 /**
  * The daemon app only briefly exists to start
@@ -583,7 +584,9 @@ int commander_main(int argc, char *argv[])
 				new_main_state = commander_state_s::MAIN_STATE_AUTO_TAKEOFF;
 			} else if (!strcmp(argv[2], "auto:land")) {
 				new_main_state = commander_state_s::MAIN_STATE_AUTO_LAND;
-			} else {
+			} else if (!strcmp(argv[2], "auto:loiter_land")) {
+				new_main_state = commander_state_s::MAIN_STATE_AUTO_LOITER_LAND;
+			 }else {
 				warnx("argument %s unsupported.", argv[2]);
 			}
 
@@ -1473,7 +1476,7 @@ Commander::run()
 	memset(&geofence_result, 0, sizeof(geofence_result));
 
 	/* Subscribe to manual control data */
-	int sp_man_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
+	int sp_man_sub = orb_subscribe(ORB_ID(manual_control_setpoint));      /////  here  get  manual  control setpoint
 	memset(&sp_man, 0, sizeof(sp_man));
 
 	/* Subscribe to offboard control data */
@@ -1647,7 +1650,7 @@ Commander::run()
 
 	int32_t datalink_loss_act = 0;
 	int32_t rc_loss_act = 0;
-	int32_t datalink_loss_timeout = 10;
+	//int32_t datalink_loss_timeout = 10;
 	float rc_loss_timeout = 0.5;
 	int32_t datalink_regain_timeout = 0;
 	float offboard_loss_timeout = 0.0f;
@@ -2177,6 +2180,7 @@ Commander::run()
 						mavlink_and_console_log_info(&mavlink_log_pub, "Landing detected");
 					} else {
 						mavlink_and_console_log_info(&mavlink_log_pub, "Takeoff detected");
+
 						have_taken_off_since_arming = true;
 
 						// Set all position and velocity test probation durations to takeoff value
@@ -2615,10 +2619,12 @@ Commander::run()
 			/* prevent further feedback until the mission changes */
 			_last_mission_instance = _mission_result.instance_count;
 		}
-
+		
 		/* RC input check */
-		if (!status_flags.rc_input_blocked && sp_man.timestamp != 0 &&
-		    (hrt_absolute_time() < sp_man.timestamp + (uint64_t)(rc_loss_timeout * 1e6f))) {
+		if (!status_flags.rc_input_blocked && sp_man.timestamp != 0 && (hrt_absolute_time() < sp_man.timestamp + (uint64_t)(rc_loss_timeout * 1e6f))) 
+		  //if((float)datalink_loss_timeout < 9.0f)   //////////
+		{
+			//mavlink_and_console_log_info(&mavlink_log_pub, "boom start  here");
 			/* handle the case where RC signal was regained */
 			if (!status_flags.rc_signal_found_once) {
 				status_flags.rc_signal_found_once = true;
@@ -2681,7 +2687,7 @@ Commander::run()
 			}
 
 			/* ARM
-			 * check if left stick is in lower right position or arm button is pushed or arm switch has transition from disarm to arm
+			 * check if left stick is in lower right position or arm button is pushed or arm switch has transition from disarm to arm      /////arm   disarm  
 			 * and we're in MANUAL mode */
 			const bool stick_in_lower_right = (sp_man.r > STICK_ON_OFF_LIMIT && sp_man.z < 0.1f);
 			const bool arm_switch_to_arm_transition = arm_switch_is_button == 0 &&
@@ -2747,7 +2753,7 @@ Commander::run()
 				 */
 				tune_negative(true);
 			}
-
+			//mavlink_and_console_log_info(&mavlink_log_pub, "boom continue  here");
 			/* evaluate the main state machine according to mode switches */
 			bool first_rc_eval = (_last_sp_man.timestamp == 0) && (sp_man.timestamp > 0);
 			transition_result_t main_res = set_main_state(&status, &global_position, &local_position, &status_changed);
@@ -3045,10 +3051,12 @@ Commander::run()
 
 		was_armed = armed.armed;
 
-		/* now set navigation state according to failsafe and main state */
-		bool nav_state_changed = set_nav_state(&status,
+		//////status. is_auto_loiter_land = sp_man.z >0;    ////   
+		/* now set navigation state according to failsafe and main state */               ///////     here     set    nav   state  
+
+		bool nav_state_changed = set_nav_state(				&status,
 											   &armed,
-											   &internal_state,
+											   &internal_state,                              ///////   internal_state      store    our  own    flight  state
 											   &mavlink_log_pub,
 											   (link_loss_actions_t)datalink_loss_act,
 											   _mission_result.finished,
@@ -3087,7 +3095,7 @@ Commander::run()
 			orb_publish(ORB_ID(vehicle_control_mode), control_mode_pub, &control_mode);
 
 			status.timestamp = now;
-			orb_publish(ORB_ID(vehicle_status), status_pub, &status);
+			orb_publish(ORB_ID(vehicle_status), status_pub, &status); //////  publish  vehicle status
 
 			armed.timestamp = now;
 
@@ -3194,6 +3202,7 @@ Commander::run()
 
 		usleep(COMMANDER_MONITORING_INTERVAL);
 	}
+
 
 	thread_should_exit = true;
 
@@ -3379,8 +3388,11 @@ transition_result_t
 set_main_state(struct vehicle_status_s *status_local, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
 {
 	if (safety.override_available && safety.override_enabled) {
+	
+		//mavlink_and_console_log_info(&mavlink_log_pub, "boom  set main state here");
 		return set_main_state_override_on(status_local, changed);
 	} else {
+		//mavlink_and_console_log_info(&mavlink_log_pub, "boom  set main state down here");
 		return set_main_state_rc(status_local, global_position, local_position, changed);
 	}
 }
@@ -3394,6 +3406,8 @@ set_main_state_override_on(struct vehicle_status_s *status_local, bool *changed)
 	return res;
 }
 
+
+///////    set main state according to RC switches
 transition_result_t
 set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
 {
@@ -3405,6 +3419,10 @@ set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position
 	// feature, just in case offboard control goes crazy.
 
 	/* manual setpoint has not updated, do not re-evaluate it */
+
+	//mavlink_and_console_log_info(&mavlink_log_pub, "boom  4 here");
+
+	
 	if (!(!_last_condition_global_position_valid &&
 		status_flags.condition_global_position_valid)
 		&& (((_last_sp_man.timestamp != 0) && (_last_sp_man.timestamp == sp_man.timestamp)) ||
@@ -3417,7 +3435,10 @@ set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position
 		 (_last_sp_man.loiter_switch == sp_man.loiter_switch) &&
 		 (_last_sp_man.mode_slot == sp_man.mode_slot) &&
 		 (_last_sp_man.stab_switch == sp_man.stab_switch) &&
-		 (_last_sp_man.man_switch == sp_man.man_switch)))) {
+		 (_last_sp_man.man_switch == sp_man.man_switch))))
+		 
+	//if (0) 
+	{
 
 		// store the last manual control setpoint set by the pilot in a manual state
 		// if the system now later enters an autonomous state the pilot can move
@@ -3439,11 +3460,13 @@ set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position
 		}
 
 		/* no timestamp change or no switch change -> nothing changed */
+		//mavlink_and_console_log_info(&mavlink_log_pub, "boom  5 here");
 		return TRANSITION_NOT_CHANGED;
+
 	}
 
 	_last_sp_man = sp_man;
-
+	//mavlink_and_console_log_info(&mavlink_log_pub, "boom  3 here");
 	// reset the position and velocity validity calculation to give the best change of being able to select
 	// the desired mode
 	reset_posvel_validity(global_position, local_position, changed);
@@ -3628,12 +3651,15 @@ set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position
 				}
 			}
 		}
-
+		//mavlink_and_console_log_info(&mavlink_log_pub, "boom  2 here");
 		return res;
 	}
+	//mavlink_and_console_log_info(&mavlink_log_pub, "boom  1 here");
 
 	/* offboard and RTL switches off or denied, check main mode switch */
 	switch (sp_man.mode_switch) {
+		
+		//mavlink_and_console_log_info(&mavlink_log_pub, "data link #%i lost", sp_man.mode_switch);
 	case manual_control_setpoint_s::SWITCH_POS_NONE:
 		res = TRANSITION_NOT_CHANGED;
 		break;
@@ -3731,15 +3757,33 @@ set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position
 		break;
 
 	case manual_control_setpoint_s::SWITCH_POS_ON:			// AUTO
-		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_MISSION, main_state_prev, &status_flags, &internal_state);
 
-		if (res != TRANSITION_DENIED) {
-			break;	// changed successfully or already in this state
+		//mavlink_and_console_log_info(&mavlink_log_pub, "here1111");
+		///////  judge   mission  or   loiter  landing !!!!        HERE  START
+		///////  
+		if((float)datalink_loss_timeout < 9.0f)
+		{
+			res = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_LOITER_LAND, main_state_prev, &status_flags, &internal_state);
+			//mavlink_and_console_log_info(&mavlink_log_pub, "boom  1111 here");
+			//mavlink_and_console_log_info(&mavlink_log_pub, "here");
+
+			if (res != TRANSITION_DENIED) {
+				break;	// changed successfully or already in this state
+			}
+		}
+		else
+		{
+			res = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_MISSION, main_state_prev, &status_flags, &internal_state);
+		
+			if (res != TRANSITION_DENIED) {
+				break;	// changed successfully or already in this state
+			}
 		}
 
 		print_reject_mode(status_local, "AUTO MISSION");
 
 		// fallback to LOITER if home position not set
+
 		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_LOITER, main_state_prev, &status_flags, &internal_state);
 
 		if (res != TRANSITION_DENIED) {

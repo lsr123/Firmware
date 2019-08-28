@@ -89,6 +89,7 @@ Navigator::Navigator() :
 	_geofence(this),
 	_mission(this, "MIS"),
 	_loiter(this, "LOI"),
+	_loiter_land(this,"LOI_LAND"),
 	_takeoff(this, "TKF"),
 	_land(this, "LND"),
 	_rtl(this, "RTL"),
@@ -118,6 +119,7 @@ Navigator::Navigator() :
 	_navigation_mode_array[7] = &_takeoff;
 	_navigation_mode_array[8] = &_land;
 	_navigation_mode_array[9] = &_follow_target;
+	_navigation_mode_array[10] = &_loiter_land;
 }
 
 Navigator::~Navigator()
@@ -603,6 +605,7 @@ Navigator::task_main()
 		}
 
 		/* Do stuff according to navigation state set by commander */
+		static int run_num = 1;
 		NavigatorMode *navigation_mode_new{nullptr};
 
 		switch (_vstatus.nav_state) {
@@ -614,6 +617,11 @@ Navigator::task_main()
 		case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:
 			_pos_sp_triplet_published_invalid_once = false;
 			navigation_mode_new = &_loiter;
+			break;
+
+		case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER_LAND:
+			_pos_sp_triplet_published_invalid_once = false;
+			navigation_mode_new = &_loiter_land;
 			break;
 
 		case vehicle_status_s::NAVIGATION_STATE_AUTO_RCRECOVER:
@@ -683,16 +691,18 @@ Navigator::task_main()
 			break;
 		}
 
-		/* we have a new navigation mode: reset triplet */
+		/* we have a new navigation mode: reset triplet */   ////only run here when switch to a new navigation mode
 		if (_navigation_mode != navigation_mode_new) {
 			reset_triplets();
+			//PX4_INFO("reset triplets here ");
+
 		}
 
 		_navigation_mode = navigation_mode_new;
 
 		/* iterate through navigation modes and set active/inactive for each */
 		for (unsigned int i = 0; i < NAVIGATOR_MODE_ARRAY_SIZE; i++) {
-			_navigation_mode_array[i]->run(_navigation_mode == _navigation_mode_array[i]);
+			_navigation_mode_array[i]->run(_navigation_mode == _navigation_mode_array[i]);    /////run  function frequency is about 200hz
 		}
 
 		/* if we landed and have not received takeoff setpoint then stay in idle */
@@ -707,16 +717,20 @@ Navigator::task_main()
 
 		}
 
-		/* if nothing is running, set position setpoint triplet invalid once */
+		/* if nothing is running, set position setpoint triplet invalid once */  /////run here when there is no  navigation 
 		if (_navigation_mode == nullptr && !_pos_sp_triplet_published_invalid_once) {
 			_pos_sp_triplet_published_invalid_once = true;
 			reset_triplets();
+			//PX4_INFO("reset triplets here ");
 		}
 
 		if (_pos_sp_triplet_updated) {
+
 			_pos_sp_triplet.timestamp = hrt_absolute_time();
 			publish_position_setpoint_triplet();
 			_pos_sp_triplet_updated = false;
+			//PX4_INFO("publish here %d",run_num);
+			run_num = run_num + 1;
 		}
 
 		if (_mission_result_updated) {
@@ -774,16 +788,23 @@ Navigator::status()
 }
 
 void
-Navigator::publish_position_setpoint_triplet()
+Navigator::publish_position_setpoint_triplet()     ////in mission mode, publish frequency is about 20hz, but  in loiter mode, only publish once
 {
+	
 	/* do not publish an empty triplet */
+	PX4_INFO("I AM  here!!! ");   
+	
 	if (!_pos_sp_triplet.current.valid) {
 		return;
 	}
+	
 
 	/* lazily publish the position setpoint triplet only once available */
 	if (_pos_sp_triplet_pub != nullptr) {
+		PX4_INFO("current.alt =   %f",(double)_pos_sp_triplet.current.alt);
 		orb_publish(ORB_ID(position_setpoint_triplet), _pos_sp_triplet_pub, &_pos_sp_triplet);
+		PX4_INFO("publish  here!!! ");
+		
 
 	} else {
 		_pos_sp_triplet_pub = orb_advertise(ORB_ID(position_setpoint_triplet), &_pos_sp_triplet);

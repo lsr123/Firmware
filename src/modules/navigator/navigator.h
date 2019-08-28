@@ -49,6 +49,7 @@
 #include "gpsfailure.h"
 #include "land.h"
 #include "loiter.h"
+#include "loiter_land.h"
 #include "mission.h"
 #include "navigator_mode.h"
 #include "rcloss.h"
@@ -75,7 +76,7 @@
 /**
  * Number of navigation modes that need on_active/on_inactive calls
  */
-#define NAVIGATOR_MODE_ARRAY_SIZE 10
+#define NAVIGATOR_MODE_ARRAY_SIZE 11
 
 class Navigator : public control::SuperBlock
 {
@@ -310,6 +311,7 @@ private:
 	NavigatorMode	*_navigation_mode{nullptr};		/**< abstract pointer to current navigation mode class */
 	Mission		_mission;			/**< class that handles the missions */
 	Loiter		_loiter;			/**< class that handles loiter */
+	Loiter_land          _loiter_land;
 	Takeoff		_takeoff;			/**< class for handling takeoff commands */
 	Land		_land;			/**< class for handling land commands */
 	RTL 		_rtl;				/**< class that handles RTL */

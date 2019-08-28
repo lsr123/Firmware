@@ -4,3 +4,4 @@
 px4/position_setpoint previous
 px4/position_setpoint current
 px4/position_setpoint next
+float32 my_desire_airsp

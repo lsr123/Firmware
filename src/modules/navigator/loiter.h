@@ -74,6 +74,7 @@ private:
 	 * to move to a new location.
 	 */
 	void reposition();
+	void reposition_land();
 
 	/**
 	 * Set the position to hold based on the current local position
@@ -82,6 +83,11 @@ private:
 
 	control::BlockParamInt _param_yawmode;
 	bool _loiter_pos_set;
+	bool _loiter_land_start;
+	float _loiter_num;
+	int _on_active_num;
 };
+
+
 
 #endif
