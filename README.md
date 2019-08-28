@@ -110,4 +110,4 @@ Additional information about supported hardware can be found in [PX4 user Guide 
 A high level project roadmap is available [here](https://www.dronecode.org/roadmap/).
 
 
-这个分支，包含盘旋降落，在盘旋点降高降速，内环包括三种姿态控制方法，拨杆切换。
+这个分支，包含盘旋降落，在盘旋点降高降速，内环包括三种姿态控制方法，拨杆切换
