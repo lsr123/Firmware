@@ -1302,17 +1302,27 @@ FixedwingAttitudeControl::task_main()
 						}
 
 						float pitch_u = 0.0f;
+						float switch_temp = 0.0f;
 						static float pitch_u_ADRC = 0.0f;
 						static float pitch_signal_PID = 0.0f;
 
-						if(_manual.flaps<0)
+						//_parameters.y_integrator_max
+
+
+						switch_temp = _parameters.y_integrator_max;
+
+						//if(_manual.flaps<0 || abs(_manual.flaps - 0.0f) < 0.001f)
+						/*
+						if(switch_temp > 0.1f)
 						{
+							PX4_INFO("run  P_PID !!! ");
 							pitch_u = _pitch_ctrl.control_euler_rate(control_input);
 							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u)) ? pitch_u + _parameters.trim_pitch :
 								_parameters.trim_pitch;
 								
 						}
 						else if(_manual.flaps>0.5f)
+						//else if(false)
 						{
 							//PX4_INFO("signal PID");
 							pitch_signal_PID = _pitch_ctrl.signal_PID_control(control_input);
@@ -1324,9 +1334,33 @@ FixedwingAttitudeControl::task_main()
 						}
 						else
 						{
+							PX4_INFO("run  adrc !!! manual_flaps = %f", (double)_manual.flaps);
 							pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
 							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );
 
+							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u_ADRC)) ? pitch_u_ADRC + _parameters.trim_pitch :
+								_parameters.trim_pitch;
+						}
+						*/
+						
+						
+						pitch_u = _pitch_ctrl.control_euler_rate(control_input);
+						if(switch_temp >0.1f)
+						{
+							pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u);  // use pitch_u to estimate states
+						}
+						else
+						{
+							pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
+						}
+						//pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
+						if(switch_temp > 0.1f)
+						{
+							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u)) ? pitch_u + _parameters.trim_pitch :
+								_parameters.trim_pitch;
+						}
+						else
+						{
 							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u_ADRC)) ? pitch_u_ADRC + _parameters.trim_pitch :
 								_parameters.trim_pitch;
 						}
