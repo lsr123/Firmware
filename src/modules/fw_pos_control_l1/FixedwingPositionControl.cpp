@@ -815,6 +815,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 			static float airspeed_temp = -1.0f;
 			static float my_alt_sp = 550.0f;
 			static float my_airspeed_sp = 10.0f;
+			static bool first_in = false;
 			my_alt_sp = my_alt_sp;
 			my_airspeed_sp = my_airspeed_sp;
 			airspeed_temp = airspeed_temp;
@@ -844,10 +845,12 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 				{
 					alt_temp = _global_pos.alt;
 					airspeed_temp = sqrt(pow(_global_pos.vel_n,2) + pow(_global_pos.vel_d,2) + pow(_global_pos.vel_e,2));
+					first_in = true;
 				}
 				else
 				{
-					calculate_alt_airspeed_sp(&my_alt_sp,&my_airspeed_sp,alt_temp,airspeed_temp);
+					calculate_alt_airspeed_sp(&my_alt_sp,&my_airspeed_sp,alt_temp,airspeed_temp,first_in);
+					first_in = false;
 				}
 				mission_airspeed = _parameters.airspeed_trim;     //////通过开关选择是用地面站设定的速度还是用降落模块传递过来的速度
 			
@@ -863,7 +866,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 			//PX4_INFO("mission_airspeed11 = %f",(double)calculate_target_airspeed(mission_airspeed));
 
 			} else{
-
+				count  = 0;
 			//mission_airspeed = _pos_sp_triplet.my_desire_airsp;
 			//mission_airspeed = 12.0f;
 			tecs_update_pitch_throttle(alt_sp,
@@ -2054,34 +2057,45 @@ int fw_pos_control_l1_main(int argc, char *argv[])
 
 
 
-void FixedwingPositionControl::calculate_alt_airspeed_sp(float *my_alt_sp, float *my_airspeed_sp,float alt_start,float airspeed_start)
+void FixedwingPositionControl::calculate_alt_airspeed_sp(float *my_alt_sp, float *my_airspeed_sp,float alt_start,float airspeed_start,bool first_in)
 {
 
 	static float current_alt_target = alt_start;
 	static float current_airspeed_target = airspeed_start;
 
-	delta_h = (alt_start - _parameters.loi_end_alt) / 5.0f;
-	delta_airspeed = (airspeed_start - _parameters.loi_end_aps) / 5.0f;
-
-	if(reach_alt_airspeed(_parameters.loi_end_alt,_parameters.loi_end_aps))
+	if(first_in)
 	{
-
+		current_alt_target = alt_start;
+		current_airspeed_target = airspeed_start;
 	}
 	else
 	{
-		if(reach_alt_airspeed(current_alt_target,current_airspeed_target))
+		//first_in = false;
+		delta_h = (alt_start - _parameters.loi_end_alt) / 5.0f;
+		delta_airspeed = (airspeed_start - _parameters.loi_end_aps) / 5.0f;
+
+		if(reach_alt_airspeed(_parameters.loi_end_alt,_parameters.loi_end_aps))
 		{
-			current_alt_target = current_alt_target - delta_h;
-			current_airspeed_target = current_airspeed_target - delta_airspeed;
+
 		}
 		else
 		{
+			if(reach_alt_airspeed(current_alt_target,current_airspeed_target))
+			{
+				current_alt_target = current_alt_target - delta_h;
+				current_airspeed_target = current_airspeed_target - delta_airspeed;
+			}
+			else
+			{
+
+			}
 
 		}
-
 	}
 	*my_alt_sp = current_alt_target;
 	*my_airspeed_sp = current_airspeed_target ;
+
+	
 	//delta_airspeed = 0.1f;
 	//delta_h = delta_h;
 	PX4_INFO("my_alt_sp = %f",(double)*my_alt_sp);

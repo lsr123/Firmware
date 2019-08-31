@@ -484,7 +484,7 @@ private:
 					float throttle_min, float throttle_max, float throttle_cruise,
 					bool climbout_mode, float climbout_pitch_min_rad,
 					uint8_t mode = tecs_status_s::TECS_MODE_NORMAL);
-	void calculate_alt_airspeed_sp(float *alt, float *airspeed, float alt_start,float airspeed_temp);
+	void calculate_alt_airspeed_sp(float *alt, float *airspeed, float alt_start,float airspeed_temp,bool first_in);
 	bool reach_alt_airspeed(float alt, float airspeed);
 };
 
