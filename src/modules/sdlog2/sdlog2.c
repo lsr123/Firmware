@@ -102,6 +102,7 @@
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/task_stack_info.h>
 #include <uORB/topics/ADRC.h>
+#include <uORB/topics/ADRC_ROLL.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -1195,6 +1196,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct vehicle_gps_position_s dual_gps_pos;
 		struct task_stack_info_s task_stack_info;
 		struct ADRC_s ADRC_data_info;
+		struct ADRC_ROLL_s ADRC_ROLL_data_info;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1253,6 +1255,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_DPRS_s log_DPRS;
 			struct log_STCK_s log_STCK;
 			struct log_ADRC_s log_ADRC;
+			struct log_ADRC_ROLL_s log_ADRC_ROLL;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1303,6 +1306,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int diff_pres_sub;
 		int task_stack_info_sub;
 		int ADRC_sub;
+		int ADRC_ROLL_sub;
 	} subs;
 
 	subs.cmd_sub = -1;
@@ -1346,6 +1350,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.diff_pres_sub = -1;
 	subs.task_stack_info_sub = -1;
 	subs.ADRC_sub=-1;
+	subs.ADRC_ROLL_sub=-1;
 
 	/* add new topics HERE */
 
@@ -2159,8 +2164,26 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_ADRC.z1 = buf.ADRC_data_info.z1;
 			log_msg.body.log_ADRC.z2 = buf.ADRC_data_info.z2;
 			log_msg.body.log_ADRC.z3 = buf.ADRC_data_info.z3;
-			
+
+						
 			LOGBUFFER_WRITE_AND_COUNT(ADRC);
+		}
+
+		if (copy_if_updated(ORB_ID(ADRC_ROLL), &subs.ADRC_ROLL_sub, &buf.ADRC_ROLL_data_info)) {
+
+			log_msg.msg_type = LOG_ADRC_ROLL_MSG;
+			//log_msg.body.log_ADRC_ROLL.x1 = buf.ADRC_ROLL_data_info.x1;
+			//log_msg.body.log_ADRC_ROLL.x1 = 0.3333;
+			
+
+			log_msg.body.log_ADRC_ROLL.x1_roll = buf.ADRC_ROLL_data_info.x1_roll;
+			log_msg.body.log_ADRC_ROLL.x2_roll = buf.ADRC_ROLL_data_info.x2_roll;
+			log_msg.body.log_ADRC_ROLL.z1_roll = buf.ADRC_ROLL_data_info.z1_roll;
+			log_msg.body.log_ADRC_ROLL.z2_roll = buf.ADRC_ROLL_data_info.z2_roll;
+			log_msg.body.log_ADRC_ROLL.z3_roll = buf.ADRC_ROLL_data_info.z3_roll;
+
+			
+			LOGBUFFER_WRITE_AND_COUNT(ADRC_ROLL);
 		}
 
 		pthread_mutex_lock(&logbuffer_mutex);

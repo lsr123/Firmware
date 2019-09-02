@@ -587,6 +587,16 @@ struct log_ADRC_s {
 	float z1;
 	float z2;
 	float z3;
+	
+};
+
+#define LOG_ADRC_ROLL_MSG 133
+struct log_ADRC_ROLL_s {
+	float x1_roll;
+	float x2_roll;
+	float z1_roll;
+	float z2_roll;
+	float z3_roll;
 };
 #pragma pack(pop)
 
@@ -657,7 +667,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(TIME, "Q", "StartTime"),
 	LOG_FORMAT(VER, "NZ", "Arch,FwGit"),
 	LOG_FORMAT(PARM, "Zf", "Name,Value"),
-	LOG_FORMAT(ADRC,"fffff","x1,x2,z1,z2,z3")
+	LOG_FORMAT(ADRC,"fffff","x1,x2,z1,z2,z3"),
+	LOG_FORMAT(ADRC_ROLL,"fffff","x1_roll,x2_roll,z1_roll,z2_roll,z3_roll")
 };
 
 static const unsigned log_formats_num = sizeof(log_formats) / sizeof(log_formats[0]);

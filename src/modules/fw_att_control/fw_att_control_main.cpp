@@ -182,6 +182,21 @@ private:
 		float p_SIGNAL_P;
 		float p_SIGNAL_D;
 
+		float r_ADRC_timestep;
+		float r_ADRC_TD_s;
+		float r_ADRC_TD_r;
+		float r_ADRC_TD_bd;
+		float r_ADRC_NLF_lamda;
+		float r_ADRC_NLF_alpha;
+		float r_ADRC_NLF_b0;
+		float r_ADRC_E_bt1;
+		float r_ADRC_E_bt2;
+		float r_ADRC_E_bt3;
+		float r_ADRC_PD_p;
+		float r_ADRC_PD_d;
+		float r_SIGNAL_P;
+		float r_SIGNAL_D;
+
 		float r_tc;
 		float r_p;
 		float r_i;
@@ -259,6 +274,22 @@ private:
 		param_t p_ADRC_PD_d;
 		param_t p_SIGNAL_P;
 		param_t p_SIGNAL_D;
+
+		param_t r_ADRC_timestep;
+		param_t r_ADRC_TD_s;
+		param_t r_ADRC_TD_r;
+		param_t r_ADRC_TD_bd;
+		param_t r_ADRC_NLF_lamda;
+		param_t r_ADRC_NLF_alpha;
+		param_t r_ADRC_NLF_b0;
+		param_t r_ADRC_E_bt1;
+		param_t r_ADRC_E_bt2;
+		param_t r_ADRC_E_bt3;
+		
+		param_t r_ADRC_PD_p;
+		param_t r_ADRC_PD_d;
+		param_t r_SIGNAL_P;
+		param_t r_SIGNAL_D;
 
 		param_t r_tc;
 		param_t r_p;
@@ -463,6 +494,23 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_parameter_handles.p_SIGNAL_P = param_find("FW_P_SIGNAL_P");
 	_parameter_handles.p_SIGNAL_D = param_find("FW_P_SIGNAL_D");
 
+	_parameter_handles.r_ADRC_timestep = param_find("FW_R_ADRC_T_S");
+	_parameter_handles.r_ADRC_TD_s = param_find("FW_R_ADRC_TD_S");
+	_parameter_handles.r_ADRC_TD_r = param_find("FW_R_ADRC_TD_R");
+	_parameter_handles.r_ADRC_TD_bd = param_find("FW_R_ADRC_BD");
+	_parameter_handles.r_ADRC_NLF_lamda = param_find("FW_R_ADRC_NF_LAM");
+	_parameter_handles.r_ADRC_NLF_alpha = param_find("FW_R_ADRC_NF_ALP");
+	_parameter_handles.r_ADRC_NLF_b0 = param_find("FW_R_ADRC_NF_B0");
+	_parameter_handles.r_ADRC_E_bt1 = param_find("FW_R_ADRC_E_BT1");
+	_parameter_handles.r_ADRC_E_bt2 = param_find("FW_R_ADRC_E_BT2");
+	_parameter_handles.r_ADRC_E_bt3 = param_find("FW_R_ADRC_E_BT3");
+
+
+	_parameter_handles.r_ADRC_PD_p = param_find("FW_R_ADRC_P");
+	_parameter_handles.r_ADRC_PD_d = param_find("FW_R_ADRC_D");
+	_parameter_handles.r_SIGNAL_P = param_find("FW_R_SIGNAL_P");
+	_parameter_handles.r_SIGNAL_D = param_find("FW_R_SIGNAL_D");
+
 
 	_parameter_handles.r_tc = param_find("FW_R_TC");
 	_parameter_handles.r_p = param_find("FW_RR_P");
@@ -573,6 +621,22 @@ FixedwingAttitudeControl::parameters_update()
 	param_get(_parameter_handles.p_SIGNAL_P,&(_parameters.p_SIGNAL_P));
 	param_get(_parameter_handles.p_SIGNAL_D,&(_parameters.p_SIGNAL_D));
 
+	param_get(_parameter_handles.r_ADRC_timestep,&(_parameters.r_ADRC_timestep));
+	param_get(_parameter_handles.r_ADRC_TD_s,&(_parameters.r_ADRC_TD_s));
+	param_get(_parameter_handles.r_ADRC_TD_r,&(_parameters.r_ADRC_TD_r));
+	param_get(_parameter_handles.r_ADRC_TD_bd,&(_parameters.r_ADRC_TD_bd));
+	param_get(_parameter_handles.r_ADRC_NLF_lamda ,&(_parameters.r_ADRC_NLF_lamda ));
+	param_get(_parameter_handles.r_ADRC_NLF_alpha ,&(_parameters.r_ADRC_NLF_alpha ));
+	param_get(_parameter_handles.r_ADRC_NLF_b0 ,&(_parameters.r_ADRC_NLF_b0 ));
+	param_get(_parameter_handles.r_ADRC_E_bt1 ,&(_parameters.r_ADRC_E_bt1 ));
+	param_get(_parameter_handles.r_ADRC_E_bt2 ,&(_parameters.r_ADRC_E_bt2 ));
+	param_get(_parameter_handles.r_ADRC_E_bt3 ,&(_parameters.r_ADRC_E_bt3 ));
+
+	param_get(_parameter_handles.r_ADRC_PD_p,&(_parameters.r_ADRC_PD_p));
+	param_get(_parameter_handles.r_ADRC_PD_d,&(_parameters.r_ADRC_PD_d));
+	param_get(_parameter_handles.r_SIGNAL_P,&(_parameters.r_SIGNAL_P));
+	param_get(_parameter_handles.r_SIGNAL_D,&(_parameters.r_SIGNAL_D));
+
 	param_get(_parameter_handles.r_tc, &(_parameters.r_tc));
 	param_get(_parameter_handles.r_p, &(_parameters.r_p));
 	param_get(_parameter_handles.r_i, &(_parameters.r_i));
@@ -659,6 +723,23 @@ FixedwingAttitudeControl::parameters_update()
 	_pitch_ctrl.set_d(_parameters.p_ADRC_PD_d);
 	_pitch_ctrl.set_signal_p(_parameters.p_SIGNAL_P);
 	_pitch_ctrl.set_signal_d(_parameters.p_SIGNAL_D);
+
+
+		_roll_ctrl.set_timestep(_parameters.r_ADRC_timestep);
+	_roll_ctrl.set_s(_parameters.r_ADRC_TD_s);
+	_roll_ctrl.set_r(_parameters.r_ADRC_TD_r);
+	_roll_ctrl.set_bd(_parameters.r_ADRC_TD_bd);
+	_roll_ctrl.set_adrc_lamda(_parameters.r_ADRC_NLF_lamda);
+	_roll_ctrl.set_adrc_alpha(_parameters.r_ADRC_NLF_alpha);
+	_roll_ctrl.set_adrc_b0(_parameters.r_ADRC_NLF_b0);
+	_roll_ctrl.set_adrc_bt1(_parameters.r_ADRC_E_bt1);
+	_roll_ctrl.set_adrc_bt2(_parameters.r_ADRC_E_bt2);
+	_roll_ctrl.set_adrc_bt3(_parameters.r_ADRC_E_bt3);
+
+	_roll_ctrl.set_p(_parameters.r_ADRC_PD_p);
+	_roll_ctrl.set_d(_parameters.r_ADRC_PD_d);
+	_roll_ctrl.set_signal_p(_parameters.r_SIGNAL_P);
+	_roll_ctrl.set_signal_d(_parameters.r_SIGNAL_D);
 
 	/* roll control parameters */
 	_roll_ctrl.set_time_constant(_parameters.r_tc);
@@ -1392,9 +1473,47 @@ FixedwingAttitudeControl::task_main()
 						control_input.yaw_rate_setpoint = _yaw_ctrl.get_desired_rate();
 
 						/* Run attitude RATE controllers which need the desired attitudes from above, add trim */
+
+						float roll_u = 0.0f;
+						float switch_temp = 0.0f;
+						static float roll_u_ADRC = 0.0f;
+						
+						static float roll_signal_PID = 0.0f;
+
+						//_parameters.y_integrator_max
+
+
+						switch_temp = _parameters.y_integrator_max;
+										
+						
+						roll_u = _roll_ctrl.control_euler_rate(control_input);
+						if(switch_temp >0.1f)
+						{
+							roll_u_ADRC = _roll_ctrl.ADRC_control(control_input,roll_u);  // use pitch_u to estimate states
+						}
+						else
+						{
+							roll_u_ADRC = _roll_ctrl.ADRC_control(control_input,roll_u_ADRC);
+							PX4_INFO("ADRC ROLL  RUN!!!!");
+
+						}
+						//pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
+						if(switch_temp > 0.1f)
+						{
+							_actuators.control[actuator_controls_s::INDEX_ROLL] = (PX4_ISFINITE(roll_u)) ? roll_u + _parameters.trim_roll :
+								_parameters.trim_roll;
+						}
+						else
+						{
+							_actuators.control[actuator_controls_s::INDEX_ROLL] = (PX4_ISFINITE(roll_u_ADRC)) ? roll_u_ADRC + _parameters.trim_roll :
+								_parameters.trim_roll;
+						}
+
+						/*
 						float roll_u = _roll_ctrl.control_euler_rate(control_input);
 						_actuators.control[actuator_controls_s::INDEX_ROLL] = (PX4_ISFINITE(roll_u)) ? roll_u + _parameters.trim_roll :
 								_parameters.trim_roll;
+						*/
 
 						if (!PX4_ISFINITE(roll_u)) {
 							_roll_ctrl.reset_integrator();
@@ -1404,49 +1523,38 @@ FixedwingAttitudeControl::task_main()
 								warnx("roll_u %.4f", (double)roll_u);
 							}
 						}
+						if (!PX4_ISFINITE(roll_signal_PID)) {
+							_pitch_ctrl.reset_integrator();
+							perf_count(_nonfinite_output_perf);
+
+							if (_debug && loop_counter % 10 == 0) {
+								warnx("pitch_signal_PID %.4f, _yaw_ctrl.get_desired_rate() %.4f,"
+								      " airspeed %.4f, airspeed_scaling %.4f,"
+								      " roll_sp %.4f, pitch_sp %.4f,"
+								      " _roll_ctrl.get_desired_rate() %.4f,"
+								      " _pitch_ctrl.get_desired_rate() %.4f"
+								      " att_sp.roll_body %.4f",
+								      (double)roll_signal_PID, (double)_yaw_ctrl.get_desired_rate(),
+								      (double)airspeed, (double)airspeed_scaling,
+								      (double)roll_sp, (double)pitch_sp,
+								      (double)_roll_ctrl.get_desired_rate(),
+								      (double)_pitch_ctrl.get_desired_rate(),
+								      (double)_att_sp.roll_body);
+							}
+						}
+
 
 						float pitch_u = 0.0f;
-						float switch_temp = 0.0f;
+						//float switch_temp = 0.0f;
 						static float pitch_u_ADRC = 0.0f;
+						
 						static float pitch_signal_PID = 0.0f;
 
 						//_parameters.y_integrator_max
 
 
-						switch_temp = _parameters.y_integrator_max;
-
-						//if(_manual.flaps<0 || abs(_manual.flaps - 0.0f) < 0.001f)
-						/*
-						if(switch_temp > 0.1f)
-						{
-							PX4_INFO("run  P_PID !!! ");
-							pitch_u = _pitch_ctrl.control_euler_rate(control_input);
-							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u)) ? pitch_u + _parameters.trim_pitch :
-								_parameters.trim_pitch;
-								
-						}
-						else if(_manual.flaps>0.5f)
-						//else if(false)
-						{
-							//PX4_INFO("signal PID");
-							pitch_signal_PID = _pitch_ctrl.signal_PID_control(control_input);
-							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );//
-
-							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_signal_PID)) ? pitch_signal_PID + _parameters.trim_pitch :
-								_parameters.trim_pitch;
-							PX4_INFO("signal  pid");	
-						}
-						else
-						{
-							PX4_INFO("run  adrc !!! manual_flaps = %f", (double)_manual.flaps);
-							pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
-							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );
-
-							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u_ADRC)) ? pitch_u_ADRC + _parameters.trim_pitch :
-								_parameters.trim_pitch;
-						}
-						*/
-						
+						//switch_temp = _parameters.y_integrator_max;
+										
 						
 						pitch_u = _pitch_ctrl.control_euler_rate(control_input);
 						if(switch_temp >0.1f)
@@ -1468,16 +1576,7 @@ FixedwingAttitudeControl::task_main()
 							_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u_ADRC)) ? pitch_u_ADRC + _parameters.trim_pitch :
 								_parameters.trim_pitch;
 						}
-
-
-						//warnx("here5");
-							//pitch_u_ADRC = _pitch_ctrl.ADRC_control(control_input,pitch_u_ADRC);
-							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );
-							//printf("pitch_u_ADRC = %8.4f\n",(double)pitch_u_ADRC );
-
-							//_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u_ADRC)) ? pitch_u_ADRC + _parameters.trim_pitch :
-							//	_parameters.trim_pitch;
-						//warnx("here6");
+					
 						
 						if (!PX4_ISFINITE(pitch_u)) {
 							_pitch_ctrl.reset_integrator();
@@ -1498,8 +1597,7 @@ FixedwingAttitudeControl::task_main()
 								      (double)_att_sp.roll_body);
 							}
 						}
-
-						
+					
 						
 
 						if (!PX4_ISFINITE(pitch_u_ADRC)) {
