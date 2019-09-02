@@ -851,6 +851,9 @@ FixedwingAttitudeControl::task_main()
 		//warnx("here4");
 		static int loop_counter = 0;
 		static int mycounter = 0;
+		static int mycounter1 = 0;
+		float manualz = 0.0f;
+		float manualx = 0.0f;
 		//static float sumtime = 0.0f;
 		//static long nowtime = 0;
 		//static long lasttime = 0;
@@ -1053,6 +1056,17 @@ FixedwingAttitudeControl::task_main()
 			}
 
 			/* decide if in stabilized or full manual control */
+
+			if (_att_sp.loiter_to_stabilized)
+			{
+				//_vcontrol_mode.flag_control_rates_enabled = true;
+				
+			}
+			else
+			{
+
+			}
+
 			if (_vcontrol_mode.flag_control_rates_enabled) {
 			
 				/* scale around tuning airspeed */
@@ -1121,27 +1135,8 @@ FixedwingAttitudeControl::task_main()
 							sumtime = 0.0f;
 						}
 						PX4_INFO("delta time = \t%8.4f",(double)sumtime);
-						//下面生成的是正弦波
-						/*
-						if(sumtime<0.5f)
-						{
-							_manual.x= -0.1f;
-						}
-						else if(sumtime<2.5f)
-						{
-							_manual.x = -0.25f;
-						}
-						/
-						
-						if(sumtime<0.5f)
-						{
-							_manual.x =- 0.1f;
-						}
-						else if (sumtime<3.5f)
-						{
-							_manual.x = 0.1f*sinf(0.666f*3.141592653f*(sumtime-0.5f)) - 0.15f;
-						}
-						*/
+					
+
 						if(sumtime<0.5f)
 						{
 							_manual.z =1.0f;
@@ -1158,14 +1153,20 @@ FixedwingAttitudeControl::task_main()
 						{
 							_manual.z = -0.5f*sumtime+1.85f;
 						}
-						else if(sumtime<5.7f)
+						else if(sumtime<2.0f)
 						{
 							_manual.z = 0.0f;
 						}
-						else if(sumtime<7.2f)
+						else 
 						{
-							_manual.z=0.6666667f*sumtime-3.8f;
+							_manual.z = 0.0f;
 						}
+					//	else if(sumtime<7.2f)
+					//	{
+					//		_manual.z=0.6666667f*sumtime-3.8f;
+					//	}
+
+
 						/*
 						if(sumtime<0.5f)
 						{
@@ -1202,7 +1203,11 @@ FixedwingAttitudeControl::task_main()
 						}
 						else if(sumtime<9.2f)
 						{
-							_manual.x = -0.3f;	
+							_manual.x = -0.3f;								
+						}
+						else 
+						{
+							_manual.x = -0.3f;
 						}
 					}
 					else
@@ -1248,6 +1253,105 @@ FixedwingAttitudeControl::task_main()
 					_yaw_ctrl.reset_integrator();
 					_wheel_ctrl.reset_integrator();
 				}
+
+
+
+
+				if(_att_sp.loiter_to_stabilized && _parameters.w_rmax > 0.9f)   ///// here  start gliding land
+				{
+					PX4_INFO("stabilized flag  =  true !!!!");
+
+						static uint64_t enter_time1 = hrt_absolute_time();
+						uint64_t now_time1=hrt_absolute_time() ;
+						uint64_t delta_time1 ;
+						float sumtime1 = 0.0f;
+						if(mycounter1 == 0)
+						{
+							enter_time1 = hrt_absolute_time();
+							mycounter1 = 1;
+						}
+						else
+						{
+							now_time1 = hrt_absolute_time();
+						}
+						delta_time1 = now_time1 - enter_time1;
+						sumtime1 = delta_time1/1000000.0f;
+						
+
+						if(sumtime1>1000)
+						{
+							sumtime1 = 0.0f;
+						}
+						//PX4_INFO("delta time = \t%8.4f",(double)sumtime1);
+						
+						if(sumtime1<0.5f)
+						{
+							manualz =1.0f;
+						}
+						else if (sumtime1<2.0f)
+						{
+							manualz = -0.266666667f*sumtime1 + 1.133333333f;
+						} 
+						else if(sumtime1<2.7f)
+						{
+							manualz = -0.1429f*sumtime1+0.8857f;
+						}
+						else if(sumtime1<3.7f)
+						{
+							manualz = -0.5f*sumtime1+1.85f;
+						}
+						else if(sumtime1<2.0f)
+						{
+							manualz = 0.0f;
+						}
+						else 
+						{
+							manualz = 0.0f;
+						}
+					
+
+						if(sumtime1<0.5f)
+						{
+							manualx=-0.3f;
+						}
+						else if(sumtime1<3.7f)
+						{
+							manualx = -1.0f*(-0.09375f*sumtime1+0.34875f);
+						}
+						else if(sumtime1<6.7f)
+						{
+							manualx = -0.0f;
+						}
+						else if(sumtime1<8.2f)
+						{
+							//manualx = -1.0f*(0.2f*sumtime1 - 1.34f);
+							manualx = -0.0f;
+						}
+						else if(sumtime1<9.2f)
+						{
+							//manualx = -0.3f;	
+							manualx = -0.0f;							
+						}
+						else 
+						{
+							//manualx = -0.3f;
+							manualx = -0.0f;
+						}
+
+
+
+					_att_sp.pitch_body = - manualx* _parameters.man_pitch_max + _parameters.pitchsp_offset_rad;
+					_att_sp.roll_body = 0 * _parameters.man_roll_max + _parameters.rollsp_offset_rad;
+					_att_sp.thrust = manualz;
+					_att_sp.thrust = 0.0f;
+				}
+				else
+				{
+					mycounter1 = 0;
+				}	
+
+
+				
 
 				float roll_sp = _att_sp.roll_body;
 				float pitch_sp = _att_sp.pitch_body;

@@ -22,6 +22,8 @@ bool disable_mc_yaw_control			# control yaw for mc (used for vtol weather-vane m
 
 bool apply_flaps
 
+bool loiter_to_stabilized
+
 float32 landing_gear
 
 # TOPICS vehicle_attitude_setpoint mc_virtual_attitude_setpoint fw_virtual_attitude_setpoint

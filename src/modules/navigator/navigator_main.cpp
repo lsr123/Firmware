@@ -792,7 +792,7 @@ Navigator::publish_position_setpoint_triplet()     ////in mission mode, publish 
 {
 	
 	/* do not publish an empty triplet */
-	PX4_INFO("I AM  here!!! ");   
+	//PX4_INFO("I AM  here!!! ");   
 	
 	if (!_pos_sp_triplet.current.valid) {
 		return;
@@ -801,9 +801,9 @@ Navigator::publish_position_setpoint_triplet()     ////in mission mode, publish 
 
 	/* lazily publish the position setpoint triplet only once available */
 	if (_pos_sp_triplet_pub != nullptr) {
-		PX4_INFO("current.alt =   %f",(double)_pos_sp_triplet.current.alt);
+		//PX4_INFO("current.alt =   %f",(double)_pos_sp_triplet.current.alt);
 		orb_publish(ORB_ID(position_setpoint_triplet), _pos_sp_triplet_pub, &_pos_sp_triplet);
-		PX4_INFO("publish  here!!! ");
+//		PX4_INFO("publish  here!!! ");
 		
 
 	} else {

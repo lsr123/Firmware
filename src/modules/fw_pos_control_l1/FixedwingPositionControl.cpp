@@ -869,7 +869,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 				count  = 0;
 			//mission_airspeed = _pos_sp_triplet.my_desire_airsp;
 			//mission_airspeed = 12.0f;
-			tecs_update_pitch_throttle(alt_sp,
+				tecs_update_pitch_throttle(alt_sp,
 						   calculate_target_airspeed(mission_airspeed),
 						   radians(_parameters.pitch_limit_min) - _parameters.pitchsp_offset_rad,
 						   radians(_parameters.pitch_limit_max) - _parameters.pitchsp_offset_rad,
@@ -883,12 +883,12 @@ FixedwingPositionControl::control_position(const math::Vector<2> &curr_pos, cons
 			//PX4_INFO("temp = %f ",(double)temp);
 			
 
-			PX4_INFO("vehicle_global_position.alt = %f ",(double)_global_pos.alt);   
-			PX4_INFO("vehicle_global_position.vel_n = %f ",(double)_global_pos.vel_n);
-			PX4_INFO("vehicle_global_position.vel_e = %f ",(double)_global_pos.vel_e);
-			PX4_INFO("vehicle_global_position.vel_d = %f ",(double)_global_pos.vel_d);
-			PX4_INFO("vehicle_global_position.alt_sp = %f ",(double)alt_sp); 
-			PX4_INFO("vehicle_global_position.airspeed_sp = %f ",(double)mission_airspeed);
+			//PX4_INFO("vehicle_global_position.alt = %f ",(double)_global_pos.alt);   
+			//PX4_INFO("vehicle_global_position.vel_n = %f ",(double)_global_pos.vel_n);
+			//PX4_INFO("vehicle_global_position.vel_e = %f ",(double)_global_pos.vel_e);
+			//PX4_INFO("vehicle_global_position.vel_d = %f ",(double)_global_pos.vel_d);
+			//PX4_INFO("vehicle_global_position.alt_sp = %f ",(double)alt_sp); 
+			//PX4_INFO("vehicle_global_position.airspeed_sp = %f ",(double)mission_airspeed);
 
 
 
@@ -1607,6 +1607,8 @@ FixedwingPositionControl::task_main()
 
 	_task_running = true;
 
+	_att_sp.loiter_to_stabilized = false;
+
 	while (!_task_should_exit) {
 
 		/* wait for up to 500ms for data */
@@ -2076,10 +2078,12 @@ void FixedwingPositionControl::calculate_alt_airspeed_sp(float *my_alt_sp, float
 
 		if(reach_alt_airspeed(_parameters.loi_end_alt,_parameters.loi_end_aps))
 		{
-
+			_att_sp.loiter_to_stabilized = true;
+			PX4_INFO("loiter to stabilized started!!!!");
 		}
 		else
-		{
+		{	
+			//_att_sp.loiter_to_stabilized = false;
 			if(reach_alt_airspeed(current_alt_target,current_airspeed_target))
 			{
 				current_alt_target = current_alt_target - delta_h;

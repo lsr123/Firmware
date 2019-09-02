@@ -357,7 +357,7 @@ PARAM_DEFINE_FLOAT(FW_WR_I, 0.1f);
 PARAM_DEFINE_FLOAT(FW_WR_IMAX, 1.0f);
 
 /**
- * Maximum wheel steering rate
+ * Maximum wheel steering rateEEEE
  *
  * This limits the maximum wheel steering rate the controller will output (in degrees per
  * second). Setting a value of zero disables the limit.
