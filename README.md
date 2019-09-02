@@ -110,7 +110,9 @@ Additional information about supported hardware can be found in [PX4 user Guide 
 A high level project roadmap is available [here](https://www.dronecode.org/roadmap/).
 
 
-这个分支，包含盘旋降落，在盘旋点降高降速，内环包括三种姿态控制方法，拨杆切换
+这个分支，包含盘旋降落，在盘旋点降高降速，内环包括三种姿态控制方法，拨杆切换。在底圈滑翔降高。
+
+这个分支只有pitch 的adrc控制
 
 
-bug 可能是deltaT 引起的！！！
+
